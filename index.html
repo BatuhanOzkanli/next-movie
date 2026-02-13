@@ -6,7 +6,7 @@
     <title>NextMovie - AI Watchlist</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="tailwind.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 
@@ -17,7 +17,30 @@
                 <div id="nav-logo" class="flex-shrink-0 flex items-center cursor-pointer">
                     <span class="text-2xl font-extrabold tracking-tight text-white">Next<span class="text-yellow-500">Movie</span></span>
                 </div>
-                <div class="text-gray-500 text-sm">Navigation Coming Soon...</div>
+                // Navigation
+                <div class="hidden md:flex items-center space-x-6">
+                    <nav class="flex space-x-2">
+                        <button id="nav-search" class="text-white hover:text-yellow-500 px-3 py-2 rounded-md text-sm font-semibold transition-colors">
+                            Search
+                        </button>
+                        <button id="nav-watchlist" class="text-gray-400 hover:text-yellow-500 px-3 py-2 rounded-md text-sm font-semibold transition-colors">
+                            Watchlist
+                        </button>
+                    </nav>
+
+                    <div class="h-6 w-px bg-gray-700"></div>
+
+                    <button id="btn-header-sync" class="flex items-center space-x-2 bg-[#1A1A1A] hover:bg-[#252525] border border-gray-700 text-gray-300 px-3 py-1.5 rounded-full text-xs font-mono transition-colors" title="Click to sync devices">
+                        <i class="fas fa-key text-yellow-500"></i>
+                        <span id="header-key-display">Loading...</span>
+                    </button>
+
+                    <div class="flex items-center md:hidden">
+                        <button id="btn-mobile-menu" class="text-gray-400 hover:text-white focus:outline-none p-2">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </header>
