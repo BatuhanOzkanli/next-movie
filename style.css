@@ -48,12 +48,12 @@ body {
 .poster-overlay {
     opacity: 0;
     transition: opacity 0.3s ease;
-    background: rgba(0, 0, 0, 6);
+    background: rgba(0, 0, 0, 0.6);
 }
 
 /* ---Toggle Switch Logic--- */
 
-.toggle-checbox {
+.toggle-checkbox {
     transition: all 0.3s ease-in-out;
 }
 
@@ -64,7 +64,7 @@ body {
 }
 
     /* When checked, change the background color */
-.toggle-checbox:checked + .toggle-label {
+.toggle-checkbox:checked + .toggle-label {
     background-color: #c084fc;
 }
 
