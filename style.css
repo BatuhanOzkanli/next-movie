@@ -1,0 +1,85 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #121212;
+    color: #FFFFFF;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #121212;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #374151;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #4B5563;
+}
+
+/* Movie Card Hover Effects */
+.movie-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.movie-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+}
+
+.placeholder-poster {
+    background: linear-gradient(45deg, #1f2937, #111827);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+}
+
+/* Overlay for poster on hover */
+
+.poster-container:hover .poster-overlay {
+    opacity: 1;
+}
+
+.poster-overlay {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: rgba(0, 0, 0, 6);
+}
+
+/* ---Toggle Switch Logic--- */
+
+.toggle-checbox {
+    transition: all 0.3s ease-in-out;
+}
+
+    /* When checked, move the knob to the right and change the border color */
+.toggle-checkbox:checked {
+    transform: translateX(100%);
+    border-color: #c084fc;
+}
+
+    /* When checked, change the background color */
+.toggle-checbox:checked + .toggle-label {
+    background-color: #c084fc;
+}
+
+/* ---Star Rating Animation--- */
+.star-rating i {
+    cursor: pointer;
+    transition: color 0.2s;
+    transform: scale(1);
+}
+
+.star-rating i:hover {
+    transform: scale(1.2);
+}
+
+.star-rating i:hover,
+.star-rating i.active {
+    color: #EAB308;
+}
