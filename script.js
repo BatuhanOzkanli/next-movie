@@ -3,6 +3,7 @@ console.log("Script loaded successfully!")
 
 window.app = {
     searchMode: 'title',
+    omdbKey: 'f4bcfb9c', // The API Key
 
     init:function() {
         
@@ -18,14 +19,21 @@ window.app = {
         const searchBtn = document.getElementById('btn-search-action')
         if (searchBtn) {
             searchBtn.addEventListener('click', () => {
-                const input = document.getElementById('search-input')
-                console.log(`Searching for: ${input.value} in mode: ${this.searchMode}`)
+                this.handleSearch()
+            })
+        }
+
+        // Enter key listener
+        const input = document.getElementById('search-input')
+        if (input) {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.handleSearch()
             })
         }
     },
 
     toggleSearchMode: function() {
-        const checkbox = document.getElementById('search-mode-toggle')
+        const modeToggle = document.getElementById('search-mode-toggle')
         const labelTitle = document.getElementById('label-title')
         const labelMood = document.getElementById('label-mood')
         const icon = document.getElementById('search-icon')
@@ -34,7 +42,7 @@ window.app = {
         const moodHint = document.getElementById('mood-hint')
         const searchBtnAction = document.getElementById('btn-search-action')
 
-        if (checkbox.checked) {
+        if (modeToggle.checked) {
             // Mode: AI Mood
             this.searchMode = 'mood'
 
@@ -84,7 +92,78 @@ window.app = {
             searchBtnAction.classList.remove('bg-purple-600', 'hover:bg-purple-700', 'text-white')
             searchBtnAction.innerText = "Search"
         }
+    },
+
+    handleSearch: function() {
+        if (this.searchMode === 'mood') {
+            console.log("AI Search not implemented yet.")
+        }
+        else {
+            this.searchMovies()
+        }
+    },
+
+    searchMovies: async function() {
+        const input = document.getElementById('search-input')
+        const term = input.value.trim()
+
+        if (!term) return
+
+        // Show loading UI
+        document.getElementById('search-placeholder').classList.add('hidden')
+        document.getElementById('search-grid').innerHTML = ''
+        document.getElementById('search-loading').classList.remove('hidden')
+
+        try {
+            // Fetching Data from OMDb
+            const res = await fetch(`https://www.omdbapi.com/?apikey=${this.omdbKey}&s=${encodeURIComponent(term)}&type=movie`)
+            const data = await res.json()
+
+            // Hide Loading
+            document.getElementById('search-loading').classList.add('hidden')
+
+            // Handle Results
+            if (data.Response === 'True') {
+                this.renderSearchResults(data.Search)
+            }
+            else {
+                document.getElementById('search-grid').innerHTML =
+                    `<div class="col-span-full text-center text-gray-500 py-10">No Movies found for "${term}".</div>`
+            }
+        }
+        catch (error) {
+            console.error(error)
+            alert('Error connecting to server.')
+        }
+    },
+
+    renderSearchResults: function(movies) {
+        const grid = document.getElementById('search-grid')
+
+        // Loop through movies and create HTML cards
+        grid.innerHTML = movies.map(movie => 
+            `<div class="movie-card bg-[#1A1A1A] rounded-xl overflow-hidden shadow-lg border border-gray-800 flex flex-col h-full relative group/card">
+
+            <div class="relative aspect-[2/3] w-full bg-gray-800 overflow-hidden poster-container">
+            ${movie.Poster !== 'N/A'
+                ? `<img src="${movie.Poster}" class="w-full h-full object-cover">`
+                : `<div class="w-full h-full placeholder-poster"><i class="fas fa-film text-4xl"></i></div>`
+            } 
+            </div>
+
+            <div class="p-4 flex flex-col flex-grow">
+                <h3 class="text-white font-bold text-lg leading-tight mb-2 line-clamp-2" title="${movie.Title}">
+                ${movie.Title}
+                </h3>
+                
+                <div class="text-xs text-gray-400 mb-4 uppercase tracking-wide">
+                ${movie.Year}
+                </div>
+            </div>
+        </div>`
+        ).join('')
     }
+
 }
 
 
