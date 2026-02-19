@@ -4,6 +4,10 @@ console.log("Script loaded successfully!")
 window.app = {
     searchMode: 'title',
     omdbKey: 'f4bcfb9c', // The API Key
+    
+    // Data Storage
+    watchlist: [],
+    currentResults: [],
 
     init:function() {
         
@@ -124,6 +128,7 @@ window.app = {
 
             // Handle Results
             if (data.Response === 'True') {
+                this.currentResults = data.Search // Store the results in the memory.
                 this.renderSearchResults(data.Search)
             }
             else {
@@ -159,9 +164,31 @@ window.app = {
                 <div class="text-xs text-gray-400 mb-4 uppercase tracking-wide">
                 ${movie.Year}
                 </div>
+
+                <div class="mt-auto pt-4 border-t border-gray-800">
+                    <button onclick="app.addToWatchlist('${movie.imdbID}')" class="w-full bg-gray-800 hover:bg-yellow-500 hover:text-black text-white py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 group">
+                        <i class="fas fa-plus group-hover:scale-110 transition-transform"></i>
+                        Watchlist                    
+                    </button>
+                </div>
             </div>
         </div>`
         ).join('')
+    },
+
+    addToWatchlist: function(imdbID) {
+        // Find the full movie object from our current search results
+        const movie = this.currentResults.find(m => m.imdbID === imdbID)
+
+        // Making sure the movie exist and isn't already in the watchlist
+        if (movie && !this.watchlist.some(m => m.imdbID === imdbID)) {
+            this.watchlist.push(movie)
+            console.log("Current Watchlist:", this.watchlist)
+            alert(`Added "${movie.Title}" to your watchlist!`)
+        }
+        else {
+            alert("This movie is already in your watchlist!")
+        }
     }
 
 }
