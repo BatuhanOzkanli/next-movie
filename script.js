@@ -245,11 +245,18 @@ window.app = {
                 : `<div class="w-full h-full placeholder-poster"><i class="fas fa-film text-4xl"></i></div>`
             }
             </div>
+
             <div class="p-4 flex flex-col flex-grow">
                 <h3 class="text-white font-bold text-lg leading-tight mb-2 line-clamp-2" title="${movie.Title}">${movie.Title}</h3>
                 <div class="text-xs text-gray-400 mb-4 uppercase tracking-wide">${movie.Year}</div>
-                </div>
-            </div>`
+
+            <div class="mt-auto pt-4 border-t border-gray-800">
+                <button onclick="app.removeFromWatchlist('${movie.imdbID}')" class="w-full text-xs text-red-400 hover:text-red-300 py-2 hover:bg-red-900/20 rounded transition-colors text-center border border-transparent hover:border-red-900/30">
+                    Remove from List
+                </button>
+            </div>
+        </div>
+    </div>`
         ).join('')
     }
 
