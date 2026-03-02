@@ -34,6 +34,42 @@ window.app = {
                 if (e.key === 'Enter') this.handleSearch()
             })
         }
+
+        // Nav Listeners
+        const navSearch = document.getElementById('nav-search')
+        if (navSearch) navSearch.addEventListener('click', () => this.switchView('search'))
+
+        const navWatch = document.getElementById('nav-watchlist')
+        if (navWatch) navWatch.addEventListener('click', () => this.switchView('watchlist'))
+
+    },
+
+    switchView: function(viewName) {
+        // Hide all views
+        document.querySelectorAll('.view-section').forEach(element => element.classList.add('hidden'))
+
+        // Show the requested view
+        document.getElementById(`view-${viewName}`).classList.remove('hidden')
+
+        // Update Nav Button Colors
+        const navSearch = document.getElementById('nav-search')
+        const navWatch = document.getElementById('nav-watchlist')
+
+        if (viewName === 'search') {
+            navSearch.classList.add('text-white')
+            navSearch.classList.remove('text-gray-400')
+            navWatch.classList.add('text-gray-400')
+            navWatch.classList.remove('text-white')
+        }
+        else {
+            navWatch.classList.add('text-white')
+            navWatch.classList.remove('text-gray-400')
+            navSearch.classList.add('text-gray-400')
+            navSearch.classList.remove('text-white')
+
+            // Render the saved movies when opening the watchlist
+            this.renderWatchlist()
+        }
     },
 
     toggleSearchMode: function() {
@@ -189,11 +225,35 @@ window.app = {
         else {
             alert("This movie is already in your watchlist!")
         }
+    },
+
+    renderWatchlist: function() {
+        const grid = document.getElementById('watchlist-grid')
+
+        // Empty State
+        if (this.watchlist.length === 0) {
+            grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-10 text-xl">Your watchlist is empty. Go find some movies!</div>`
+            return
+        }
+
+        // Draw the saved movies
+        grid.innerHTML = this.watchlist.map(movie => 
+            `<div class="movie-card bg-[#1A1A1A] rounded-xl overflow-hidden shadow-lg border border-gray-800 flex flex-col h-full relative group/card">
+            <div class="relative aspect-[2/3] w-full bg-gray-800 overflow-hidden poster-container">
+            ${movie.Poster !== 'N/A'
+                ? `<img src="${movie.Poster}" class="w-full h-full object-cover">`
+                : `<div class="w-full h-full placeholder-poster"><i class="fas fa-film text-4xl"></i></div>`
+            }
+            </div>
+            <div class="p-4 flex flex-col flex-grow">
+                <h3 class="text-white font-bold text-lg leading-tight mb-2 line-clamp-2" title="${movie.Title}">${movie.Title}</h3>
+                <div class="text-xs text-gray-400 mb-4 uppercase tracking-wide">${movie.Year}</div>
+                </div>
+            </div>`
+        ).join('')
     }
 
 }
-
-
 
 // Wait for the DOM to be fully loaded before initializing the app
 document.addEventListener("DOMContentLoaded", () => {
