@@ -219,6 +219,7 @@ window.app = {
         // Making sure the movie exist and isn't already in the watchlist
         if (movie && !this.watchlist.some(m => m.imdbID === imdbID)) {
             this.watchlist.push(movie)
+            this.saveData()
             console.log("Current Watchlist:", this.watchlist)
             alert(`Added "${movie.Title}" to your watchlist!`)
         }
@@ -258,6 +259,32 @@ window.app = {
         </div>
     </div>`
         ).join('')
+    },
+
+    removeFromWatchlist: function(imdbID) {
+        // .filter() creates a brand new array containing only the movies that DO NOT match the ID we clicked
+        this.watchlist = this.watchlist.filter(m => m.imdbID !== imdbID)
+
+        // Re-draw the UI to immediately reflect the change
+        this.renderWatchlist()
+
+        this.saveData()
+    },
+
+    // Save data to the browser
+    saveData: function() {
+        // Converting the array to a string to save it
+        localStorage.setItem('nextmovie_watchlist', JSON.stringify(this.watchlist))
+    },
+
+    // Load data from the browser
+    loadData: function() {
+        const savedData = localStorage.getItem('nextmovie_watchlist')
+        if (savedData) {
+            // Convert the string back into a Javascript array
+            this.watchlist = JSON.parse(savedData)
+            console.log("Watchlist loaded from storage:", this.watchlist.length, "movies")
+        }
     }
 
 }
