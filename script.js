@@ -240,7 +240,7 @@ window.app = {
         }
 
         // Draw the saved movies
-        grid.innerHTML = this.watchlist.map(movie => 
+        grid.innerHTML = this.watchlist.map(movie =>
             `<div class="movie-card bg-[#1A1A1A] rounded-xl overflow-hidden shadow-lg border border-gray-800 flex flex-col h-full relative group/card">
             <div class="relative aspect-[2/3] w-full bg-gray-800 overflow-hidden poster-container">
             ${movie.Poster !== 'N/A'
@@ -253,14 +253,30 @@ window.app = {
                 <h3 class="text-white font-bold text-lg leading-tight mb-2 line-clamp-2" title="${movie.Title}">${movie.Title}</h3>
                 <div class="text-xs text-gray-400 mb-4 uppercase tracking-wide">${movie.Year}</div>
 
+            <div class="bg-gray-800/50 p-3 rounded-xl border border-gray-700/50 mb-3 transition-colors group">
+                <div class="flex items-center justify-between relative z-10">
+                    <label class="relative inline-flex items-center cursor-pointer group/toggle">
+                        <input type="checkbox" ${movie.isWatched ? 'checked' : ''} onchange="app.toggleWatched('${movie.imdbID}')" class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500 transition-colors duration-300"></div> 
+                        <span class="ml-2 text-sm font-semibold transition-colors duration-300 text-gray-400 group-hover/toggle:text-gray-200 peer-checked:text-green-400">Watched</span>
+                    </label>
+                </div>
+
+                <div class="grid transition-all duration-700 ease-in-out grid-rows-[0fr] opacity-0 mt-0 pt-0 border-t border-transparent group-has-[:checked]:grid-rows-[1fr] group-has-[:checked]:opacity-100 group-has-[:checked]:mt-2 group-has-[:checked]:pt-2 group-has-[:checked]:border-gray-700/50">
+                    <div class="overflow-hidden min-h-0">
+                        <div class="star-rating flex justify-between px-1">
+                            ${[1,2,3,4,5].map(i => `<i class="${i <= (movie.rating || 0) ? 'fas text-yellow-500' : 'far text-gray-600'} fa-star text-base hover:text-yellow-500 transition-colors" onclick="app.setRating('${movie.imdbID}', ${i})"></i>`).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="mt-auto pt-4 border-t border-gray-800">
                 <button onclick="app.removeFromWatchlist('${movie.imdbID}')" class="w-full text-xs text-red-400 hover:text-red-300 py-2 hover:bg-red-900/20 rounded transition-colors text-center border border-transparent hover:border-red-900/30">
-                    Remove from List
+                Remove From List
                 </button>
             </div>
-        </div>
-    </div>`
-        ).join('')
+        </div>`).join('')
     },
 
     removeFromWatchlist: function(imdbID) {
@@ -286,6 +302,31 @@ window.app = {
             // Convert the string back into a Javascript array
             this.watchlist = JSON.parse(savedData)
             console.log("Watchlist loaded from storage:", this.watchlist.length, "movies")
+        }
+    },
+
+    toggleWatched: function(imdbID) {
+        // Find the specific movie in our array
+        const movie = this.watchlist.find(m => m.imdbID === imdbID)
+        if (movie) {
+            // Flip it: if true make false, if false make true
+            movie.isWatched = !movie.isWatched
+            
+            this.saveData()
+            this.renderWatchlist() // Re-draw to show the stars
+
+            this.showToast(movie.isWatched ? "Markes as watched!" : "Moved back to unwatched.")
+        }
+    },
+
+    setRating: function(imdbID, rating) {
+        const movie = this.watchlist.find(m => m.imdbID === imdbID)
+        if (movie) {
+            // Update the number rating
+            movie.rating = rating
+
+            this.saveData()
+            this.renderWatchlist() // Re-draw to color the stars yellow
         }
     },
 
