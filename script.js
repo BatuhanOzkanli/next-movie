@@ -12,6 +12,8 @@ window.app = {
     init:function() {
         
         console.log("App initializing...")
+
+        this.loadData()
         
         // Set up event listener for the search mode toggle
         const toggle = document.getElementById("search-mode-toggle")
@@ -221,10 +223,10 @@ window.app = {
             this.watchlist.push(movie)
             this.saveData()
             console.log("Current Watchlist:", this.watchlist)
-            alert(`Added "${movie.Title}" to your watchlist!`)
+            this.showToast(`Added "${movie.Title}" to your watchlist!`)
         }
         else {
-            alert("This movie is already in your watchlist!")
+            this.showToast("This movie is already in your watchlist!")
         }
     },
 
@@ -285,6 +287,19 @@ window.app = {
             this.watchlist = JSON.parse(savedData)
             console.log("Watchlist loaded from storage:", this.watchlist.length, "movies")
         }
+    },
+
+    showToast: function(message) {
+        const toast = document.getElementById('toast')
+        document.getElementById('toast-message').innerText = message
+
+        // Slide in and fade up
+        toast.classList.remove('translate-y-20', 'opacity-0')
+
+        // Wait 3 seconds, then slide out
+        setTimeout(() => {
+            toast.classList.add('translate-y-20', 'opacity-0')
+        }, 3000)
     }
 
 }
