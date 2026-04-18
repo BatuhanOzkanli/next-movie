@@ -44,6 +44,16 @@ window.app = {
         const navWatch = document.getElementById('nav-watchlist')
         if (navWatch) navWatch.addEventListener('click', () => this.switchView('watchlist'))
 
+        // Gamification Listeners
+        const spinBtn = document.getElementById('btn-spin-wheel')
+        if (spinBtn) spinBtn.addEventListener('click', () => this.pickRandomMovie())
+
+        const closeRandModal = document.getElementById('btn-close-random-modal')
+        if (closeRandModal) closeRandModal.addEventListener('click', () => document.getElementById('random-modal').classList.add('hidden'))
+            
+        const spinAgain = document.getElementById('btn-spin-again')
+        if (spinAgain) spinAgain.addEventListener('click', () => this.pickRandomMovie())
+
     },
 
     switchView: function(viewName) {
@@ -233,6 +243,10 @@ window.app = {
     renderWatchlist: function() {
         const grid = document.getElementById('watchlist-grid')
 
+        // Update Count Badge
+        const countBadge = document.getElementById('watchlist-count')
+        if (countBadge) countBadge.innerText = `${this.watchlist.length}`
+
         // Empty State
         if (this.watchlist.length === 0) {
             grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-10 text-xl">Your watchlist is empty. Go find some movies!</div>`
@@ -241,7 +255,8 @@ window.app = {
 
         // Draw the saved movies
         grid.innerHTML = this.watchlist.map(movie =>
-            `<div class="movie-card bg-[#1A1A1A] rounded-xl overflow-hidden shadow-lg border border-gray-800 flex flex-col h-full relative group/card">
+            `<div class="movie-card bg-[#1A1A1A] rounded-xl overflow-hidden shadow-lg border border-gray-800 flex flex-col h-full relative 
+            group/card ${movie.isWatched ? 'opacity-80 grayscale-[0.3] hover:opacity-100 hover:grayscale-0' : ''}">
             <div class="relative aspect-[2/3] w-full bg-gray-800 overflow-hidden poster-container">
             ${movie.Poster !== 'N/A'
                 ? `<img src="${movie.Poster}" class="w-full h-full object-cover">`
@@ -277,6 +292,36 @@ window.app = {
                 </button>
             </div>
         </div>`).join('')
+    },
+
+    pickRandomMovie: function() {
+        // Only pick from movies you havent watched yet
+        const unwatched = this.watchlist.filter(m => !m.isWatched)
+        const pool = unwatched.length > 0 ? unwatched : this.watchlist
+
+        if (pool.length === 0) {
+            this.showToast("Add some movies first")
+            return
+        }
+
+        // The match to pick a random item from an array
+        const randomMovie = pool[Math.floor(Math.random() * pool.length)]
+
+        const modal = document.getElementById('random-modal')
+        const container = document.getElementById('random-movie-container')
+
+        modal.classList.remove('hidden')
+
+        container.innerHTML = `
+        <div class="inline-block relative rounded-lg overflow-hidden shadow-2xl border-4 border-white mb-4 transform scale-100 hover:scale-105 transition-transform">
+            ${randomMovie.Poster !== 'N/A'
+                ? `<img src="${randomMovie.Poster}" class="h-64 object-cover">`
+                : `<div class="h-64 w-44 bg-gray-800 flex items-center justify-center"><i class="fas fa-film text-4xl text-gray-600"></i></div>`
+            }
+        </div>
+        <h2 class="text-3xl font-bold text-white mb-1">${randomMovie.Title}</h2>
+        <p class="text-pink-300 font-mono text-sm">${randomMovie.Year}</p>
+        `
     },
 
     removeFromWatchlist: function(imdbID) {
