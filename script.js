@@ -375,6 +375,31 @@ window.app = {
         }
     },
 
+    // Talk to Vercel Backend
+    callGemini = async function(prompt) {
+        try {
+            // Calling api folder, not Google directly
+            const response = await fetch('/api/gemini', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ prompt: prompt })
+            })
+
+            const data = await.response.json()
+
+            // Grab just the text in Google's response structure
+            if (data.candidates && data.candidates.length > 0) {
+                return data.candidates[0].content.parts[0].text
+            }
+            else {
+                return null
+            }
+        } catch (error) {
+            console.error("AI Error:", error)
+            return null
+        }
+    },
+
     showToast: function(message) {
         const toast = document.getElementById('toast')
         document.getElementById('toast-message').innerText = message
