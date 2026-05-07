@@ -469,6 +469,8 @@ window.app = {
 
             const data = await response.json()
 
+            console.log("🕵️ RAW AI RESPONSE:", data)
+
             // Grab just the text in Google's response structure
             if (data.candidates && data.candidates.length > 0) {
                 return data.candidates[0].content.parts[0].text
