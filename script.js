@@ -1,19 +1,34 @@
 console.log("Script loaded successfully!")
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
+const firebaseConfig = {
+    apiKey: "AIzaSyALScMi3gA2o1ZNrUyXI3_GoAEFC4gJuhw",
+    authDomain: "moviewatchlist-175df.firebaseapp.com",
+    projectId: "moviewatchlist-175df",
+    storageBucket: "moviewatchlist-175df.firebasestorage.app",
+    messagingSenderId: "243912543838",
+    appId: "1:243912543838:web:775068875a24b698722ecf"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+const appId = typeof __app_id !== 'undefined' ? __app_id : 'movie-watchlist';
 
 window.app = {
-    searchMode: 'title',
     omdbKey: 'f4bcfb9c', // The API Key
-    
-    // Data Storage
     watchlist: [],
     currentResults: [],
+    user: null,
+    userKey: null,
+    unsubscribeSnapshot: null,
+    searchMode: 'title',
 
     init:function() {
         
         console.log("App initializing...")
-
-        this.loadData()
         
         // Set up event listener for the search mode toggle
         const toggle = document.getElementById("search-mode-toggle")
@@ -45,9 +60,6 @@ window.app = {
         if (navWatch) navWatch.addEventListener('click', () => this.switchView('watchlist'))
 
         // Gamification Listeners
-        const clearBtn = document.getElementById('btn-clear-watchlist')
-        if (clearBtn) clearBtn.addEventListener('click', () => this.clearWatchlist())
-
         const spinBtn = document.getElementById('btn-spin-wheel')
         if (spinBtn) spinBtn.addEventListener('click', () => this.pickRandomMovie())
 
@@ -399,39 +411,6 @@ window.app = {
         this.saveData()
     },
 
-    clearWatchlist: function() {
-        // Double-check with the user before deleting everything
-        if (this.watchlist.length > 0) {
-            const confirmed = confirm("Are you sure you want to delete your entire watchlist? This cannot be undone.")
-            if (confirmed) {
-                this.watchlist = []
-
-                this.saveData()
-                this.renderWatchlist()
-                this.showToast("Watchlist Cleared!")
-            }
-            else {
-                this.showToast("Your watchlist is already empty.")
-            }
-        }
-    },
-
-    // Save data to the browser
-    saveData: function() {
-        // Converting the array to a string to save it
-        localStorage.setItem('nextmovie_watchlist', JSON.stringify(this.watchlist))
-    },
-
-    // Load data from the browser
-    loadData: function() {
-        const savedData = localStorage.getItem('nextmovie_watchlist')
-        if (savedData) {
-            // Convert the string back into a Javascript array
-            this.watchlist = JSON.parse(savedData)
-            console.log("Watchlist loaded from storage:", this.watchlist.length, "movies")
-        }
-    },
-
     toggleWatched: function(imdbID) {
         // Find the specific movie in our array
         const movie = this.watchlist.find(m => m.imdbID === imdbID)
@@ -481,6 +460,45 @@ window.app = {
         } catch (error) {
             console.error("AI Error:", error)
             return null
+        }
+    },
+
+    subscribeToWatchlist: function() {
+        if (!this.user || !this.userKey) return
+        if (!this.unsubscribeSnapshot) this.unsubscribeSnapshot()
+
+        const docRef = doc(db, 'artifacts', appID, 'public', 'data', 'custom_watchlists', this.userKey)
+        
+        this.unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
+                if (this.isToggling && docSnap.metadata.hasPendingWrites) {
+                    return
+                }
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data()
+                    this.watchlist = data.movies || []
+
+                    this.backfillMissingRatings()
+                }
+                else {
+                    this.watchlist = []
+                }
+                this.renderWatchlist()
+                if (this.currentResults.length > 0) this.renderSearchResults(this.currentResults) 
+            },  
+            (error) => {
+            console.error("Sync Error:", error)
+            })
+    },
+
+    saveWatchlistToCloud: async function() {
+        if (!this.user || !this.userKey) return
+        const docRef = doc(db, 'artifacts', appID, 'public', 'data', 'custom_watchlists', this.userKey)
+        try {
+            await setDoc(docRef, { movies: this.watchlist, lastUpdated: new Date().toISOString() })
+        } catch (e) {
+            console.error("Save Error:", e)
+            this.showToast("Error saving to cloud")
         }
     },
 
