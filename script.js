@@ -45,6 +45,9 @@ window.app = {
         if (navWatch) navWatch.addEventListener('click', () => this.switchView('watchlist'))
 
         // Gamification Listeners
+        const clearBtn = document.getElementById('btn-clear-watchlist')
+        if (clearBtn) clearBtn.addEventListener('click', () => this.clearWatchlist())
+
         const spinBtn = document.getElementById('btn-spin-wheel')
         if (spinBtn) spinBtn.addEventListener('click', () => this.pickRandomMovie())
 
@@ -394,6 +397,23 @@ window.app = {
         this.renderWatchlist()
 
         this.saveData()
+    },
+
+    clearWatchlist: function() {
+        // Double-check with the user before deleting everything
+        if (this.watchlist.length > 0) {
+            const confirmed = confirm("Are you sure you want to delete your entire watchlist? This cannot be undone.")
+            if (confirmed) {
+                this.watchlist = []
+
+                this.saveData()
+                this.renderWatchlist()
+                this.showToast("Watchlist Cleared!")
+            }
+            else {
+                this.showToast("Your watchlist is already empty.")
+            }
+        }
     },
 
     // Save data to the browser
