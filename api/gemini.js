@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed')
 
         const { prompt } = req.body
-        const apikey = process.env.GEMINI_API_KEY
+        const apiKey = process.env.GEMINI_API_KEY
 
         try {
             // Forward the request to Google's Gemini servers securely
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
                 })
             })
 
-            const data = await.response.json()
+            const data = await response.json()
             res.status(200).json(data) // Send the AI's answer back to the frontend
         } catch (error) {
             console.error(error)

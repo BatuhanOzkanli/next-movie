@@ -148,10 +148,72 @@ window.app = {
 
     handleSearch: function() {
         if (this.searchMode === 'mood') {
-            console.log("AI Search not implemented yet.")
+            this.searchByMood()
         }
         else {
             this.searchMovies()
+        }
+    },
+
+    searchByMood: async function() {
+        const input = document.getElementById('search-input')
+        const mood = input.value.trim()
+
+        if (!mood) return
+
+        // Show loading UI
+        document.getElementById('search-placeholder').classList.add('hidden')
+        document.getElementById('search-grid').innerHTML = ''
+        document.getElementById('search-loading').classList.remove('hidden')
+        document.getElementById('search-loading-text').innerText = "AI is thinking..."
+
+        try {
+            // Prompt Engineering Step
+            // Forcing Gemini to reply only with a JSON array.
+            const prompt = `I am in the mood for: "${mood}". Recommend exactly 5 distinct movies that fit this mood perfectly. 
+            Return only a raw JSON array of strings containing the movie titles. Example: ["The Matrix", "Inception", "Dune"]. 
+            Do NOT include release years, markdown formatting, or any conversational text.`
+
+            const aiResponseText = await this.callGemini(prompt)
+
+            if (!aiResponseText) {
+                throw new Error("AI returned nothing.")
+            }
+
+            // If Gemini wraps Json in markdown (```json ... ```). We have to strip that out just in case.
+            const cleanJson = aiResponseText.replace(/```json/g, '').replace(/```/g, '').trim()
+
+            // Turn the text into a real JavaScript Array
+            const titles = JSON.parse(cleanJson)
+
+            document.getElementById('search-loading-text').innerText = "Fetching posters..."
+
+            // Ask OMDb for the posters of these 5 movies simultaneously
+            const moviePromises = titles.map(title => 
+                fetch(`https://www.omdbapi.com/?apikey=${this.omdbKey}&t=${encodeURIComponent(title)}`)
+                .then(res => res.json())
+            )
+
+            // Wait for all 5 OMDb requests to finish
+            const results = await Promise.all(moviePromises)
+
+            // Keep only the ones OMDb actually found
+            const validMovies = results.filter(m => m.Response === "True")
+
+            // Render the results
+            document.getElementById('search-loading').classList.add('hidden')
+
+            if (validMovies.length > 0) {
+                this.currentResults = validMovies
+                this.renderSearchResults(validMovies)
+            } 
+            else {
+                document.getElementById('search-grid').innerHTML = `<div class="col-span-full text-center text-gray-500 py-10">AI suggested movies, but we couldn't find their posters.</div>`
+            }
+        } catch (error) {
+            console.error("Mood Search Error:", error)
+            document.getElementById('search-loading').classList.add('hidden')
+            this.showToast("Oops! The AI got confused. Try a different mood.")
         }
     },
 
@@ -376,7 +438,7 @@ window.app = {
     },
 
     // Talk to Vercel Backend
-    callGemini = async function(prompt) {
+    callGemini: async function(prompt) {
         try {
             // Calling api folder, not Google directly
             const response = await fetch('/api/gemini', {
@@ -385,7 +447,7 @@ window.app = {
                 body: JSON.stringify({ prompt: prompt })
             })
 
-            const data = await.response.json()
+            const data = await response.json()
 
             // Grab just the text in Google's response structure
             if (data.candidates && data.candidates.length > 0) {
