@@ -26,138 +26,271 @@ window.app = {
     unsubscribeSnapshot: null,
     searchMode: 'title',
 
-    init:function() {
-        
-        console.log("App initializing...")
-        
-        // Set up event listener for the search mode toggle
-        const toggle = document.getElementById("search-mode-toggle")
-        if (toggle) {
-            toggle.addEventListener('change', () => this.toggleSearchMode())
-        }
+    init: async function() {
 
-        // Set up event listener for the search button (Just logging for now)
-        const searchBtn = document.getElementById('btn-search-action')
-        if (searchBtn) {
-            searchBtn.addEventListener('click', () => {
-                this.handleSearch()
-            })
-        }
+        // Navigation & Header
+        const logo = document.getElementById('nav-logo')
+        if (logo) logo.addEventListener('click', () => this.resetToHome())
 
-        // Enter key listener
-        const input = document.getElementById('search-input')
-        if (input) {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') this.handleSearch()
-            })
-        }
-
-        // Nav Listeners
         const navSearch = document.getElementById('nav-search')
         if (navSearch) navSearch.addEventListener('click', () => this.switchView('search'))
 
         const navWatch = document.getElementById('nav-watchlist')
         if (navWatch) navWatch.addEventListener('click', () => this.switchView('watchlist'))
+        
+        const headerSync = document.getElementById('btn-header-sync')
+        if (headerSync) headerSync.addEventListener('click', () => this.openKeyModal())
+        
+        // Mobile Menu
+        const mobileMenuBtn = document.getElementById('btn-mobile-menu')
+        if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', () => this.toggleMobileMenu())
 
-        // Gamification Listeners
+        const mobSearch = document.getElementById('mobile-nav-search')
+        if (mobSearch) mobSearch.addEventListener('click', () => this.switchView('search'))
+        
+        const mobWatch = document.getElementById('mobile-nav-watchlist')
+        if (mobWatch) mobWatch.addEventListener('click', () => this.switchView('watchlist'))
+        
+        const mobSync = document.getElementById('mobile-nav-sync')
+        if (mobSync) mobSync.addEventListener('click', () => this.openKeyModal())
+
+        // Search Functionality
+        const searchBtn = document.getElementById('btn-search-action')
+        if (searchBtn) searchBtn.addEventListener('click', () => this.handleSearch())
+        
+        const searchInput = document.getElementById('search-input')
+        if (searchInput) {
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.handleSearch()
+            })
+        searchInput.addEventListener('input', () => this.toggleClearButton())
+        }
+
+        const clearBtn = document.getElementById('btn-clear-search')
+        if (clearBtn) clearBtn.addEventListener('click', () => this.ClearSearch())
+
+        // Watchlist View Buttons
+        const watchCopy = document.getElementById('btn-copy-key-watchlist')
+        if (watchCopy) watchCopy.addEventListener('click', () => this.copyKey())
+
+        const watchImport = document.getElementById('btn-open-import')
+        if (watchImport) watchImport.addEventListener('click', () => this.openImportModal())
+
         const spinBtn = document.getElementById('btn-spin-wheel')
         if (spinBtn) spinBtn.addEventListener('click', () => this.pickRandomMovie())
 
+        const aiBtn = document.getElementById('btn-ai-recommend')
+        if (aiBtn) aiBtn.addEventListener('click', () => this.getAiRecommendation())
+
+        const aiMobBtn = document.getElementById('btn-mobile-ai')
+        if (aiMobBtn) aiMobBtn.addEventListener('click', () => this.getAiRecommendation())
+        
+        const closeAiRec = document.getElementById('btn-close-ai-rec')
+        if (closeAiRec) closeAiRec.addEventListener('click', () => document.getElementById('ai-recommendation-area').classList.add('hidden'))
+
+        const emptySearchBtn = document.getElementById('btn-empty-state-search')
+        if (emptySearchBtn) emptySearchBtn.addEventListener('click', () => this.switchView('search'))
+
+
+        // Modals
+        //Sync Modal
+
+        const closeKeyModal = document.getElementById('btn-close-key-modal')
+        if (closeKeyModal) closeKeyModal.addEventListener('click', () => this.closeKeyModal())
+
+        const copyKeyModal = document.getElementById('btn-copy-key-modal');
+        if (copyKeyModal) copyKeyModal.addEventListener('click', () => this.copyKey())
+
+        const loadKeyBtn = document.getElementById('btn-load-key')
+        if (loadKeyBtn) loadKeyBtn.addEventListener('click', () => this.loadKey('input-sync-key'))
+
+        // Import Modal
+
+        const closeImpModal = document.getElementById('btn-close-import-modal')
+        if (closeImpModal) closeImpModal.addEventListener('click', () => this.closeImportModal())
+
+        const loadImpBtn = document.getElementById('btn-load-import-pure')
+        if (loadImpBtn) loadImpBtn.addEventListener('click', () => this.loadKey('input-import-key-pure'))
+
+        // Random Modal
+
         const closeRandModal = document.getElementById('btn-close-random-modal')
         if (closeRandModal) closeRandModal.addEventListener('click', () => document.getElementById('random-modal').classList.add('hidden'))
-            
+
         const spinAgain = document.getElementById('btn-spin-again')
         if (spinAgain) spinAgain.addEventListener('click', () => this.pickRandomMovie())
 
+        // AI Modal
+
+        const closeAiModal = document.getElementById('btn-close-ai-modal')
+        if (closeAiModal) closeAiModal.addEventListener('click', () => this.closeAiModal())
+
+        const closeAiModalBtn = document.getElementById('btn-close-ai-modal-btn')
+        if (closeAiModalBtn) closeAiModalBtn.addEventListener('click', () => this.closeAiModal())
+
+        // Load or Generate Sync Key
+
+        this.userKey = localStorage.getItem('fyf_user_key')
+        if (!this.userKey) {
+            this.userKey = 'user_' + Math.random().toString(36).substring(2, 9)
+            localStorage.setItem('fyf_user_key', this.userKey)
+        }
+        this.updateKeyDisplay()
+
+        this.updateNavState('search')
+
+        // Auth
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                this.user = user
+                this.subscribeToWatchlist()
+            }
+        })
+
+        try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                await signInWithCustomToken(auth, __initial_auth_token)
+            }
+            else {
+                await signInAnonymously(auth)
+            }
+        } catch (error) {
+            console.error("Auth Failed:", error)
+        }
     },
 
-    switchView: function(viewName) {
-        // Hide all views
-        document.querySelectorAll('.view-section').forEach(element => element.classList.add('hidden'))
-
-        // Show the requested view
-        document.getElementById(`view-${viewName}`).classList.remove('hidden')
-
-        // Update Nav Button Colors
-        const navSearch = document.getElementById('nav-search')
-        const navWatch = document.getElementById('nav-watchlist')
-
-        if (viewName === 'search') {
-            navSearch.classList.add('text-white')
-            navSearch.classList.remove('text-gray-400')
-            navWatch.classList.add('text-gray-400')
-            navWatch.classList.remove('text-white')
+    resetToHome: function() {
+        this.switchView('search')
+        this.ClearSearch()
+        if (this.SearchMode === 'mood') {
+            const toggle = document.getElementById('search-mode-toggle')
+            if (toggle) {
+                toggle.checked = false
+                this.toggleSearchMode()
+            }
         }
+        this.currentResults = []
+        const grid = document.getElementById('search-grid')
+        if (grid) grid.innerHTML = ''
+        document.getElementById('search-placeholder').classList.remove('hidden')
+        document.getElementById('search-loading').classList.add('hidden')
+        document.getElementById('mobile-menu').classList.add('hidden')
+    },
+
+    clearSearch: function() {
+        const input = document.getElementById('search-input')
+        input.value = ''
+        input.focus()
+        this.toggleClearButton()
+    },
+
+    toggleClearSearch: function() {
+        const input = document.getElementById('search-input')
+        const btn = document.getElementById('btn-clear-search')
+        if (input.value.trim().length > 0) {
+            btn.classList.remove('hidden')
+        } 
         else {
-            navWatch.classList.add('text-white')
-            navWatch.classList.remove('text-gray-400')
-            navSearch.classList.add('text-gray-400')
-            navSearch.classList.remove('text-white')
-
-            // Render the saved movies when opening the watchlist
-            this.renderWatchlist()
+            btn.classList.add('hidden')
         }
     },
 
+    // UI Toggles
     toggleSearchMode: function() {
-        const modeToggle = document.getElementById('search-mode-toggle')
+        const checkbox = document.getElementById('search-mode-toggle')
         const labelTitle = document.getElementById('label-title')
         const labelMood = document.getElementById('label-mood')
-        const icon = document.getElementById('search-icon')
+        const icon = document.getElementById('search-icon');
         const input = document.getElementById('search-input')
-        const searchContBg = document.getElementById('search-container-bg')
-        const moodHint = document.getElementById('mood-hint')
-        const searchBtnAction = document.getElementById('btn-search-action')
+        const bg = document.getElementById('search-container-bg');
+        const hint = document.getElementById('mood-hint');
+        const btn = document.getElementById('btn-search-action');
 
-        if (modeToggle.checked) {
-            // Mode: AI Mood
+        if (checkbox.checked) {
             this.searchMode = 'mood'
-
-            // Text Colors
-            labelTitle.classList.remove('text-yellow-500')
-            labelTitle.classList.add('text-gray-500')
-            labelMood.classList.remove('text-gray-500')
-            labelMood.classList.add('text-purple-400')
-
-            // Icon & Input
-            icon.classList.remove('fa-search')
-            icon.classList.add('fa-sparkles', 'text-purple-500')
-            input.placeholder = 'Describe your mood (e.g. "Sad 90s sci-fi")...'
-
-            // Container Styling (Purple Glow)
-            searchContBg.classList.add('border-purple-500/50', 'shadow-purple-900/20')
-            searchContBg.classList.remove('border-gray-800')
-
-            // Hint Text
-            moodHint.classList.remove('hidden')
-
-            // Button Styling
-            searchBtnAction.classList.remove('bg-yellow-500', 'hover:bg-yellow-600', 'text-black')
-            searchBtnAction.classList.add('bg-purple-600', 'hover:bg-purple-700', 'text-white')
-            searchBtnAction.innerText = "Ask AI"
+            labelTitle.classList.remove('text-yellow-500');
+            labelTitle.classList.add('text-gray-500');
+            labelMood.classList.remove('text-gray-500');
+            labelMood.classList.add('text-purple-400');
+            icon.classList.remove('fa-search');
+            icon.classList.add('fa-sparkles', 'text-purple-500');
+            input.placeholder = 'Describe a mood (e.g. "Sad 90s sci-fi")...';
+            bg.classList.add('border-purple-500/50', 'shadow-purple-900/20');
+            bg.classList.remove('border-gray-800');
+            hint.classList.remove('hidden');
+            btn.classList.remove('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+            btn.classList.add('bg-purple-600', 'hover:bg-purple-700', 'text-white');
+            btn.innerText = "Ask AI";
         }
         else {
-            // Mode: Title Search (Standart Search)
             this.searchMode = 'title'
+            labelTitle.classList.add('text-yellow-500');
+            labelTitle.classList.remove('text-gray-500');
+            labelMood.classList.add('text-gray-500');
+            labelMood.classList.remove('text-purple-400');
+            icon.classList.add('fa-search');
+            icon.classList.remove('fa-sparkles', 'text-purple-500');
+            input.placeholder = 'Search for a movie (e.g. Blade Runner)...';
+            bg.classList.remove('border-purple-500/50', 'shadow-purple-900/20');
+            bg.classList.add('border-gray-800');
+            hint.classList.add('hidden');
+            btn.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black');
+            btn.classList.remove('bg-purple-600', 'hover:bg-purple-700', 'text-white');
+            btn.innerText = "Search";
+        }
+    },
 
-            // Reset everything back to normal
-            labelTitle.classList.add('text-yellow-500')
-            labelTitle.classList.remove('text-gray-500')
-            labelMood.classList.add('text-gray-500')
-            labelMood.classList.remove('text-purple-400')
+    // Key Management
+    updateKeyDisplay: function() {
+        const elHeader = document.getElementById('header-key-display')
+        const elModal = document.getElementById('modal-key-display')
+        const elWatchlist = document.getElementById('watchlist-key-display')
 
-            icon.classList.add('fa-search')
-            icon.classList.remove('fa-sparkles', 'text-purple-500')
-            input.placeholder = "Search for a movie (e.g. Blade Runner)..."
+        if (elHeader) elHeader.innerText = this.userKey
+        if (elModal) elModal.innerText = this.userKey
+        if (elWatchlist) elWatchlist.innerText = this.userKey
+    },
 
-            searchContBg.classList.remove('border-purple-500/50', 'shadow-purple-900/20')
-            searchContBg.classList.add('border-gray-800')
+    openKeyModal: function() {
+        document.getElementById('key-modal').classList.remove('hidden')
+    },
 
-            moodHint.classList.add('hidden')
+    closeKeyModal: function() {
+        document.getElementById('key-modal').classList.add('hidden')
+    },
 
-            searchBtnAction.classList.add('bg-yellow-500', 'hover:bg-yellow-600', 'text-black')
-            searchBtnAction.classList.remove('bg-purple-600', 'hover:bg-purple-700', 'text-white')
-            searchBtnAction.innerText = "Search"
+    // New Import Modal Functions
+    openImportModal: function() {
+        document.getElementById('import-modal').classList.remove('hidden')
+        setTimeout(() => document.getElementById('input-import-key-pure').focus(), 100)
+    },
+
+    closeImportModal: function() {
+        document.getElementById('import-modal').classList.add('hidden')
+    },
+
+    copyKey: function() {
+        navigator.clipboard.writeText(this.userKey)
+        this.showToast("Key copied to clipboard!")
+    },
+
+    loadKey: function() {
+        const idToUse = (typeof inputID === 'string') ? inputId : 'input-sync-key'
+        const input = document.getElementById(idToUse)
+        const newKey = input.value.trim()
+
+        if (newKey && newKey.length > 5) {
+            this.userKey = newKey
+            localStorage.setItem('fyf_user_key', newKey)
+            this.updateKeyDisplay()
+            this.subscribeToWatchlist()
+            this.closeKeyModal()
+            this.closeImportModal()
+            this.showToast("Sync Key loaded successfully!")
+            input.value = ''
+        }
+        else {
+            alert("Please enter a valid key.")
         }
     },
 
@@ -463,43 +596,75 @@ window.app = {
         }
     },
 
+    // Firestore Sync
     subscribeToWatchlist: function() {
-        if (!this.user || !this.userKey) return
-        if (!this.unsubscribeSnapshot) this.unsubscribeSnapshot()
+        if (!this.user || !this.userKey) return;
+        if (this.unsubscribeSnapshot) this.unsubscribeSnapshot();
 
-        const docRef = doc(db, 'artifacts', appID, 'public', 'data', 'custom_watchlists', this.userKey)
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom_watchlists', this.userKey);
         
         this.unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
-                if (this.isToggling && docSnap.metadata.hasPendingWrites) {
-                    return
-                }
+            // Respect the local toggle flag
+            if (this.isToggling && docSnap.metadata.hasPendingWrites) {
+                return;
+            }
 
-                if (docSnap.exists()) {
-                    const data = docSnap.data()
-                    this.watchlist = data.movies || []
-
-                    this.backfillMissingRatings()
-                }
-                else {
-                    this.watchlist = []
-                }
-                this.renderWatchlist()
-                if (this.currentResults.length > 0) this.renderSearchResults(this.currentResults) 
-            },  
-            (error) => {
-            console.error("Sync Error:", error)
-            })
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                this.watchlist = data.movies || [];
+                
+                // Trigger the auto-fix
+                this.backfillMissingRatings(); 
+            } else {
+                this.watchlist = [];
+            }
+            this.renderWatchlist();
+            if (this.currentResults.length > 0) this.renderSearchResults(this.currentResults);
+        }, (error) => {
+            console.error("Sync Error:", error);
+        });
     },
 
     saveWatchlistToCloud: async function() {
-        if (!this.user || !this.userKey) return
-        const docRef = doc(db, 'artifacts', appID, 'public', 'data', 'custom_watchlists', this.userKey)
+        if (!this.user || !this.userKey) return;
+        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom_watchlists', this.userKey);
         try {
-            await setDoc(docRef, { movies: this.watchlist, lastUpdated: new Date().toISOString() })
+            await setDoc(docRef, { movies: this.watchlist, lastUpdated: new Date().toISOString() });
         } catch (e) {
-            console.error("Save Error:", e)
-            this.showToast("Error saving to cloud")
+            console.error("Save Error:", e);
+            this.showToast("Error saving to cloud");
         }
+    },
+    
+    // Auto-Fix Old Data
+    backfillMissingRatings: async function() {
+        // Find movies that don't have a rating yet
+        const missing = this.watchlist.filter(m => m.imdbRating === undefined);
+        
+        if (missing.length === 0) return; // Nothing to fix
+
+        console.log(`Backfilling ratings for ${missing.length} movies...`);
+
+        // 2. Fetch details for all of them
+        const promises = missing.map(async (movie) => {
+            try {
+                const res = await fetch(`https://www.omdbapi.com/?apikey=${this.omdbKey}&i=${movie.imdbID}`);
+                const data = await res.json();
+                if (data.Response === 'True') {
+                    // If API has a rating, use it. If not, mark as "N/A" so we don't try again.
+                    movie.imdbRating = data.imdbRating || "N/A";
+                }
+            } catch (e) {
+                console.error('Backfill failed for', movie.Title);
+            }
+        });
+
+        // Wait for all fetches to finish
+        await Promise.all(promises);
+        
+        // Save the fixed data back to the Cloud
+        this.saveWatchlistToCloud();
+        this.renderWatchlist();
     },
 
     showToast: function(message) {
