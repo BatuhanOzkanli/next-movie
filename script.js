@@ -400,108 +400,211 @@ window.app = {
         }
     },
 
+    // --- Rendering ---
     renderSearchResults: function(movies) {
-        const grid = document.getElementById('search-grid')
-
-        // Loop through movies and create HTML cards
-        grid.innerHTML = movies.map(movie => 
-            `<div class="movie-card bg-[#1A1A1A] rounded-xl overflow-hidden shadow-lg border border-gray-800 flex flex-col h-full relative group/card">
-
-            <div class="relative aspect-[2/3] w-full bg-gray-800 overflow-hidden poster-container">
-            ${movie.Poster !== 'N/A'
-                ? `<img src="${movie.Poster}" class="w-full h-full object-cover">`
-                : `<div class="w-full h-full placeholder-poster"><i class="fas fa-film text-4xl"></i></div>`
-            } 
-            </div>
-
-            <div class="p-4 flex flex-col flex-grow">
-                <h3 class="text-white font-bold text-lg leading-tight mb-2 line-clamp-2" title="${movie.Title}">
-                ${movie.Title}
-                </h3>
-                
-                <div class="text-xs text-gray-400 mb-4 uppercase tracking-wide">
-                ${movie.Year}
-                </div>
-
-                <div class="mt-auto pt-4 border-t border-gray-800">
-                    <button onclick="app.addToWatchlist('${movie.imdbID}')" class="w-full bg-gray-800 hover:bg-yellow-500 hover:text-black text-white py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 group">
-                        <i class="fas fa-plus group-hover:scale-110 transition-transform"></i>
-                        Watchlist                    
-                    </button>
-                </div>
-            </div>
-        </div>`
-        ).join('')
-    },
-
-    addToWatchlist: function(imdbID) {
-        // Find the full movie object from our current search results
-        const movie = this.currentResults.find(m => m.imdbID === imdbID)
-
-        // Making sure the movie exist and isn't already in the watchlist
-        if (movie && !this.watchlist.some(m => m.imdbID === imdbID)) {
-            this.watchlist.push(movie)
-            this.saveData()
-            console.log("Current Watchlist:", this.watchlist)
-            this.showToast(`Added "${movie.Title}" to your watchlist!`)
-        }
-        else {
-            this.showToast("This movie is already in your watchlist!")
-        }
+        const grid = document.getElementById('search-grid');
+        grid.innerHTML = movies.map(movie => this.createMovieCard(movie, 'search')).join('');
     },
 
     renderWatchlist: function() {
-        const grid = document.getElementById('watchlist-grid')
+        const grid = document.getElementById('watchlist-grid');
+        const emptyState = document.getElementById('watchlist-empty');
+        const countBadge = document.getElementById('watchlist-count');
+        countBadge.innerText = `${this.watchlist.length}`;
 
-        // Update Count Badge
-        const countBadge = document.getElementById('watchlist-count')
-        if (countBadge) countBadge.innerText = `${this.watchlist.length}`
-
-        // Empty State
         if (this.watchlist.length === 0) {
-            grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-10 text-xl">Your watchlist is empty. Go find some movies!</div>`
-            return
+            grid.innerHTML = '';
+            emptyState.classList.remove('hidden');
+        } else {
+            emptyState.classList.add('hidden');
+            grid.innerHTML = this.watchlist.map(movie => this.createMovieCard(movie, 'watchlist')).join('');
+        }
+    },
+
+    createMovieCard: function(movie, context) {
+        const isWatchlisted = this.watchlist.some(m => m.imdbID === movie.imdbID);
+        const posterUrl = (movie.Poster && movie.Poster !== 'N/A') ? movie.Poster : null;
+        const safeTitle = movie.Title.replace(/'/g, "\\'"); 
+        const isWatched = movie.isWatched || false;
+        const rating = movie.rating || 0;
+        const imdbScore = (movie.imdbRating && movie.imdbRating !== 'N/A') ? movie.imdbRating : null;
+        
+        // Check if this is a "Fill the Gap" movie
+        const isAiPick = movie.isAiSuggestion === true;
+        
+        // If AI pick: Yellow border
+        const borderClass = isAiPick ? 'border-yellow-500 border-2 shadow-[0_0_15px_rgba(234,179,8,0.2)]' : 'border-gray-800';
+        
+        // --- THE FIX: Added 'title' and 'cursor-help' ---
+        const badgeHtml = isAiPick ? `<div class="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded z-20 shadow-md cursor-help" title="Similar movie to your search">RELATED</div>` : '';
+
+        let bottomControlsHtml = '';
+        let watchedSectionHtml = ''; 
+        let metaGroupHtml = ''; 
+
+        let scoreHtml = '';
+        if (imdbScore) {
+            scoreHtml = `
+                <div class="flex items-center text-yellow-500 font-bold mr-2" title="IMDb Rating: ${imdbScore}">
+                    <i class="fas fa-star text-[10px] mr-1"></i>
+                    <span>${imdbScore}</span>
+                </div>
+            `;
         }
 
-        // Draw the saved movies
-        grid.innerHTML = this.watchlist.map(movie =>
-            `<div class="movie-card bg-[#1A1A1A] rounded-xl overflow-hidden shadow-lg border border-gray-800 flex flex-col h-full relative 
-            group/card ${movie.isWatched ? 'opacity-80 grayscale-[0.3] hover:opacity-100 hover:grayscale-0' : ''}">
-            <div class="relative aspect-[2/3] w-full bg-gray-800 overflow-hidden poster-container">
-            ${movie.Poster !== 'N/A'
-                ? `<img src="${movie.Poster}" class="w-full h-full object-cover">`
-                : `<div class="w-full h-full placeholder-poster"><i class="fas fa-film text-4xl"></i></div>`
-            }
+        const aiBtnHtml = `
+            <button onclick="app.getVibeCheck('${safeTitle}', '${movie.Year}')" class="text-purple-400 hover:text-purple-300 hover:bg-purple-500/20 p-1.5 rounded-full transition-all" title="✨ AI Vibe Check">
+                <i class="fas fa-magic text-sm"></i>
+            </button>
+        `;
+
+        metaGroupHtml = `
+            <div class="ml-auto flex items-center">
+                ${scoreHtml}
+                ${aiBtnHtml}
             </div>
+        `;
 
-            <div class="p-4 flex flex-col flex-grow">
-                <h3 class="text-white font-bold text-lg leading-tight mb-2 line-clamp-2" title="${movie.Title}">${movie.Title}</h3>
-                <div class="text-xs text-gray-400 mb-4 uppercase tracking-wide">${movie.Year}</div>
+        if (context === 'search') {
+            if (isWatchlisted) {
+                bottomControlsHtml = `
+                    <button disabled class="w-full bg-gray-700 text-gray-400 py-2 rounded-lg font-medium cursor-not-allowed flex items-center justify-center gap-2">
+                        <i class="fas fa-check"></i> Added
+                    </button>
+                `;
+            } else {
+                bottomControlsHtml = `
+                    <button onclick="app.addToWatchlist('${movie.imdbID}')" class="w-full bg-gray-800 hover:bg-yellow-500 hover:text-black text-white py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 group">
+                        <i class="fas fa-plus group-hover:scale-110 transition-transform"></i> Watchlist
+                    </button>
+                `;
+            }
+        } else {
+            let starsHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                const type = i <= rating ? 'fas' : 'far';
+                const colorClass = i <= rating ? 'text-yellow-500' : 'text-gray-600';
+                starsHtml += `<i class="${type} fa-star text-base ${colorClass}" onclick="app.setRating('${movie.imdbID}', ${i})"></i>`;
+            }
 
-            <div class="bg-gray-800/50 p-3 rounded-xl border border-gray-700/50 mb-3 transition-colors group">
-                <div class="flex items-center justify-between relative z-10">
-                    <label class="relative inline-flex items-center cursor-pointer group/toggle">
-                        <input type="checkbox" ${movie.isWatched ? 'checked' : ''} onchange="app.toggleWatched('${movie.imdbID}')" class="sr-only peer">
-                        <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500 transition-colors duration-300"></div> 
-                        <span class="ml-2 text-sm font-semibold transition-colors duration-300 text-gray-400 group-hover/toggle:text-gray-200 peer-checked:text-green-400">Watched</span>
-                    </label>
-                </div>
-
-                <div class="grid transition-all duration-700 ease-in-out grid-rows-[0fr] opacity-0 mt-0 pt-0 border-t border-transparent group-has-[:checked]:grid-rows-[1fr] group-has-[:checked]:opacity-100 group-has-[:checked]:mt-2 group-has-[:checked]:pt-2 group-has-[:checked]:border-gray-700/50">
-                    <div class="overflow-hidden min-h-0">
-                        <div class="star-rating flex justify-between px-1">
-                            ${[1,2,3,4,5].map(i => `<i class="${i <= (movie.rating || 0) ? 'fas text-yellow-500' : 'far text-gray-600'} fa-star text-base hover:text-yellow-500 transition-colors" onclick="app.setRating('${movie.imdbID}', ${i})"></i>`).join('')}
+            watchedSectionHtml = `
+                <div class="bg-gray-800/50 p-3 rounded-xl border border-gray-700/50 mb-3 transition-colors group">
+                    <div class="flex items-center justify-between relative z-10">
+                        <label class="relative inline-flex items-center cursor-pointer group/toggle">
+                            <input type="checkbox" ${isWatched ? 'checked' : ''} onchange="app.toggleWatched('${movie.imdbID}')" class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500 transition-colors duration-300"></div>
+                            <span class="ml-2 text-sm font-semibold transition-colors duration-300 text-gray-400 group-hover/toggle:text-gray-200 peer-checked:text-green-400">Watched</span>
+                        </label>
+                    </div>
+                    <div class="grid transition-all duration-700 ease-in-out grid-rows-[0fr] opacity-0 mt-0 pt-0 border-t border-transparent group-has-[:checked]:grid-rows-[1fr] group-has-[:checked]:opacity-100 group-has-[:checked]:mt-2 group-has-[:checked]:pt-2 group-has-[:checked]:border-gray-700/50">
+                        <div class="overflow-hidden min-h-0">
+                            <div class="star-rating flex justify-between px-1">
+                                ${starsHtml}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            `;
 
-            <div class="mt-auto pt-4 border-t border-gray-800">
+            bottomControlsHtml = `
                 <button onclick="app.removeFromWatchlist('${movie.imdbID}')" class="w-full text-xs text-red-400 hover:text-red-300 py-2 hover:bg-red-900/20 rounded transition-colors text-center border border-transparent hover:border-red-900/30">
-                Remove From List
+                    Remove from List
                 </button>
+            `;
+        }
+
+        return `
+            <div class="movie-card bg-[#1A1A1A] rounded-xl overflow-hidden shadow-lg border ${borderClass} flex flex-col h-full relative group/card ${isWatched && context === 'watchlist' ? 'opacity-80 grayscale-[0.3] hover:opacity-100 hover:grayscale-0' : ''}">
+                
+                ${badgeHtml}
+
+                <div class="relative aspect-[2/3] w-full bg-gray-800 overflow-hidden poster-container">
+                    ${posterUrl 
+                        ? `<img src="${posterUrl}" alt="${movie.Title}" class="w-full h-full object-cover">` 
+                        : `<div class="w-full h-full placeholder-poster"><i class="fas fa-film text-4xl"></i></div>`
+                    }
+                    <div class="poster-overlay absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <span class="bg-black/80 text-white px-3 py-1 rounded text-sm backdrop-blur-sm border border-gray-700">
+                            ${movie.Year}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="p-4 flex flex-col flex-grow">
+                    <div>
+                        <h3 class="text-white font-bold text-lg leading-tight mb-2 line-clamp-2 h-12 overflow-hidden" title="${movie.Title}">
+                            ${movie.Title}
+                        </h3>
+                        
+                        <div class="flex items-center text-xs text-gray-400 mb-4 uppercase tracking-wide">
+                            <span>${movie.Type}</span>
+                            <span class="mx-2">•</span>
+                            <span>${movie.Year}</span>
+                            ${metaGroupHtml}
+                        </div>
+
+                        ${watchedSectionHtml}
+                    </div>
+                    
+                    <div class="mt-auto">
+                        ${bottomControlsHtml}
+                    </div>
+                </div>
             </div>
-        </div>`).join('')
+        `;
+    },
+
+    addToWatchlist: function(imdbID) {
+        if (!this.user) {
+            this.showToast("Initializing cloud sync...");
+            return;
+        }
+        const movie = this.currentResults.find(m => m.imdbID === imdbID);
+        if (movie && !this.watchlist.some(m => m.imdbID === imdbID)) {
+            movie.isWatched = false;
+            movie.rating = 0;
+            this.watchlist.push(movie);
+            this.saveWatchlistToCloud();
+            this.renderSearchResults(this.currentResults);
+            this.showToast(`Added "${movie.Title}" to watchlist`);
+        }
+    },
+
+    removeFromWatchlist: function(imdbID) {
+        if (!this.user) return;
+        this.watchlist = this.watchlist.filter(m => m.imdbID !== imdbID);
+        this.saveWatchlistToCloud();
+        this.renderWatchlist();
+        this.showToast('Movie removed from watchlist');
+    },
+
+    // --- Feature 1: Watched & Rating ---
+    toggleWatched: function(imdbID) {
+        const movie = this.watchlist.find(m => m.imdbID === imdbID);
+        if (!movie) return;
+
+        // 1. Tell the app we are animating locally
+        this.isToggling = true;
+
+        // 2. Update Data
+        movie.isWatched = !movie.isWatched;
+        
+        // 3. Save to Cloud
+        this.saveWatchlistToCloud();
+        
+        // 4. Reset flag after animation finishes (700ms)
+        setTimeout(() => {
+            this.isToggling = false;
+        }, 750);
+    },
+
+    setRating: function(imdbID, rating) {
+        const movie = this.watchlist.find(m => m.imdbID === imdbID);
+        if (movie) {
+            movie.rating = rating;
+            this.saveWatchlistToCloud();
+            this.renderWatchlist();
+        }
     },
 
     pickRandomMovie: function() {
@@ -533,42 +636,7 @@ window.app = {
         <p class="text-pink-300 font-mono text-sm">${randomMovie.Year}</p>
         `
     },
-
-    removeFromWatchlist: function(imdbID) {
-        // .filter() creates a brand new array containing only the movies that DO NOT match the ID we clicked
-        this.watchlist = this.watchlist.filter(m => m.imdbID !== imdbID)
-
-        // Re-draw the UI to immediately reflect the change
-        this.renderWatchlist()
-
-        this.saveData()
-    },
-
-    toggleWatched: function(imdbID) {
-        // Find the specific movie in our array
-        const movie = this.watchlist.find(m => m.imdbID === imdbID)
-        if (movie) {
-            // Flip it: if true make false, if false make true
-            movie.isWatched = !movie.isWatched
-            
-            this.saveData()
-            this.renderWatchlist() // Re-draw to show the stars
-
-            this.showToast(movie.isWatched ? "Markes as watched!" : "Moved back to unwatched.")
-        }
-    },
-
-    setRating: function(imdbID, rating) {
-        const movie = this.watchlist.find(m => m.imdbID === imdbID)
-        if (movie) {
-            // Update the number rating
-            movie.rating = rating
-
-            this.saveData()
-            this.renderWatchlist() // Re-draw to color the stars yellow
-        }
-    },
-
+    
     // Talk to Vercel Backend
     callGemini: async function(prompt) {
         try {
