@@ -22,10 +22,9 @@ window.app = {
     user: null,
     userKey: null,
     unsubscribeSnapshot: null,
-    searchMode: 'title', // 'title' or 'mood'
+    searchMode: 'title', 
     
     init: async function() {
-        // Map UI interactions
         document.getElementById('nav-logo')?.addEventListener('click', () => this.resetToHome())
         document.getElementById('nav-search')?.addEventListener('click', () => this.switchView('search'))
         document.getElementById('nav-watchlist')?.addEventListener('click', () => this.switchView('watchlist'))
@@ -64,7 +63,6 @@ window.app = {
         document.getElementById('btn-close-ai-modal')?.addEventListener('click', () => this.closeAiModal())
         document.getElementById('btn-close-ai-modal-btn')?.addEventListener('click', () => this.closeAiModal())
 
-        // Hydrate session key or generate a new one
         this.userKey = localStorage.getItem('fyf_user_key')
         if (!this.userKey) {
             this.userKey = 'user_' + Math.random().toString(36).substring(2, 9)
@@ -73,7 +71,6 @@ window.app = {
         this.updateKeyDisplay()
         this.updateNavState('search')
         
-        // Boot up Firestore sync once auth resolves
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 this.user = user
@@ -81,7 +78,6 @@ window.app = {
             }
         })
 
-        // Require anonymous auth to satisfy Firebase security rules
         try {
             if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                 await signInWithCustomToken(auth, __initial_auth_token)
@@ -97,7 +93,6 @@ window.app = {
         this.switchView('search')
         this.clearSearch()
         
-        // Reset toggle if returning from Mood mode
         if (this.searchMode === 'mood') {
             const toggle = document.getElementById('search-mode-toggle')
             if (toggle) {
@@ -233,8 +228,10 @@ window.app = {
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom_watchlists', this.userKey)
         
         this.unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
-            // Ignore Firestore updates if we're running a local UI animation to prevent state thrashing
-            if (this.isToggling && docSnap.metadata.hasPendingWrites) {
+            // THE FIX: We must aggressively block ALL incoming Firebase updates while the 
+            // user is toggling the switch or clicking a rating, otherwise the local DOM is 
+            // destroyed and recreated, entirely killing your CSS expand animations.
+            if (this.isToggling) {
                 return
             }
 
@@ -264,13 +261,11 @@ window.app = {
     },
     
     backfillMissingRatings: async function() {
-        // Patch older watchlist entries that don't have IMDb ratings yet
         const missing = this.watchlist.filter(m => m.imdbRating === undefined)
         if (missing.length === 0) return
 
         const promises = missing.map(async (movie) => {
             try {
-                // Route through secure backend to hide API key
                 const res = await fetch(`/api/omdb?i=${movie.imdbID}`)
                 const data = await res.json()
                 if (data.Response === 'True') {
@@ -290,7 +285,6 @@ window.app = {
         const movie = this.watchlist.find(m => m.imdbID === imdbID)
         if (!movie) return
 
-        // Lock the UI briefly to prevent jank during the network round-trip
         this.isToggling = true
         movie.isWatched = !movie.isWatched
         this.saveWatchlistToCloud()
@@ -304,24 +298,44 @@ window.app = {
         const movie = this.watchlist.find(m => m.imdbID === imdbID)
         if (movie) {
             movie.rating = rating
+            
+            // 1. Lock the UI from re-rendering and snapping closed
+            this.isToggling = true
             this.saveWatchlistToCloud()
-            this.renderWatchlist()
+            
+            // 2. Directly update the DOM so the stars stay filled without a reload
+            this.updateStarHover(imdbID, rating)
+            
+            // 3. Update the container's reset point so hovering off keeps the new rating
+            const container = document.getElementById(`star-container-${imdbID}`)
+            if (container) {
+                container.setAttribute('onmouseleave', `app.resetStarHover('${imdbID}', ${rating})`)
+            }
+
+            // 4. Release lock
+            setTimeout(() => {
+                this.isToggling = false
+            }, 750)
         }
     },
 
-    updateStarUI: function(imdbID, targetRating) {
+    updateStarHover: function(imdbID, hoverRating) {
         for (let i = 1; i <= 5; i++) {
             const star = document.getElementById(`star-${imdbID}-${i}`)
             if (star) {
-                if (i <= targetRating) {
+                if (i <= hoverRating) {
                     star.classList.remove('far', 'text-gray-600')
-                    star.classList.add('fas', 'text-yellow-500', 'scale-110')
+                    star.classList.add('fas', 'text-yellow-500')
                 } else {
-                    star.classList.remove('fas', 'text-yellow-500', 'scale-110')
+                    star.classList.remove('fas', 'text-yellow-500')
                     star.classList.add('far', 'text-gray-600')
                 }
             }
         }
+    },
+
+    resetStarHover: function(imdbID, actualRating) {
+        this.updateStarHover(imdbID, actualRating)
     },
 
     pickRandomMovie: function() {
@@ -341,10 +355,8 @@ window.app = {
 
         modal.classList.remove('hidden')
 
-        // 1. Determine the new winner
         const winningMovie = pool[Math.floor(Math.random() * pool.length)]
 
-        // 2. Build the track array with SMART DUPLICATE PREVENTION
         const trackItems = []
         const startIndex = 2 
         const winningIndex = 25 
@@ -357,7 +369,6 @@ window.app = {
             } else {
                 let randomMovie = pool[Math.floor(Math.random() * pool.length)]
                 
-                // Prevent identical movies from sitting side-by-side
                 if (pool.length > 1 && i > 0) {
                     let attempts = 0
                     while (
@@ -375,13 +386,12 @@ window.app = {
 
         this.lastTrackItems = trackItems
 
-        // INCREASED GAP: Changed from gap-4 to gap-6 for breathing room
-        let trackHtml = `<div id="roulette-track" class="flex items-center gap-4" style="transform: translateX(0px) width: max-content">`
+        let trackHtml = `<div id="roulette-track" class="flex items-center gap-4" style="transform: translateX(0px); width: max-content">`
 
         trackItems.forEach((m, idx) => {
             const posterUrl = (m.Poster && m.Poster !== 'N/A') ? m.Poster : null
             trackHtml += `
-                <div class="roulette-card flex-shrink-0 transition-all duration-500 opacity-40" id="card-${idx}" style="width: 144px height: 224px min-width: 144px min-height: 224px">
+                <div class="roulette-card flex-shrink-0 transition-all duration-500 opacity-40" id="card-${idx}" style="width: 144px; height: 224px; min-width: 144px; min-height: 224px">
                     <div class="relative rounded-xl overflow-hidden shadow-xl border-4 border-gray-800 bg-gray-900 w-full h-full block">
                         ${posterUrl 
                             ? `<img src="${posterUrl}" class="absolute inset-0 w-full h-full object-cover">` 
@@ -398,15 +408,14 @@ window.app = {
         if (imdbScore) {
             scoreHtml = `
                 <div class="flex items-center justify-center text-yellow-500 font-bold mt-2" title="IMDb Rating: ${imdbScore}">
-                    <i class="fas fa-star text-sm" style="margin-right: 8px position: relative top: -1px"></i>
+                    <i class="fas fa-star text-sm" style="margin-right: 8px; position: relative; top: -1px"></i>
                     <span class="text-lg">${imdbScore}</span>
                 </div>
             `
         }
 
-        // TIGHTER CONTAINER: Tighter fade mask (80px) to look better on the smaller max-w-lg modal
         container.innerHTML = `
-            <div class="relative w-full overflow-hidden py-4" style="-webkit-mask-image: linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent) mask-image: linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent)">
+            <div class="relative w-full overflow-hidden py-4" style="-webkit-mask-image: linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent); mask-image: linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent)">
                 <div class="absolute top-0 bottom-0 left-1/2 w-1.5 bg-yellow-500 z-10 transform -translate-x-1/2 shadow-[0_0_15px_rgba(234,179,8,0.8)] rounded-full"></div>
                 ${trackHtml}
             </div>
@@ -428,7 +437,6 @@ window.app = {
 
         track.style.transform = `translateX(${initialDistance}px)`
 
-        // Highlight previous winner (No scaling)
         startCard.classList.remove('opacity-40')
         startCard.classList.add('opacity-100')
         startCard.querySelector('.border-4').classList.replace('border-gray-800', 'border-yellow-500')
@@ -436,7 +444,6 @@ window.app = {
         void track.offsetWidth 
 
         setTimeout(() => {
-            // Un-highlight previous winner
             startCard.classList.add('opacity-40')
             startCard.classList.remove('opacity-100')
             startCard.querySelector('.border-4').classList.replace('border-yellow-500', 'border-gray-800')
@@ -448,7 +455,6 @@ window.app = {
             track.style.transform = `translateX(${finalDistance}px)`
 
             setTimeout(() => {
-                // Highlight new winner (No scaling, just opacity and glowing border)
                 winnerCard.classList.remove('opacity-40')
                 winnerCard.classList.add('opacity-100', 'z-20')
                 winnerCard.querySelector('.border-4').classList.replace('border-gray-800', 'border-yellow-500')
@@ -515,7 +521,6 @@ window.app = {
         }
 
         try {
-            // Fetch two pages concurrently for a better filtering pool
             const p1Promise = fetch('/api/search', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -533,7 +538,6 @@ window.app = {
 
             const uniqueCandidates = Array.from(new Map(candidates.map(m => [m.imdbID, m])).values())
 
-            // Fallback to AI typo correction if OMDb returns nothing
             if (uniqueCandidates.length === 0) {
                  if (!overrideTerm) {
                     document.getElementById('search-loading-text').innerText = "Checking for typos..."
@@ -563,7 +567,6 @@ window.app = {
             )
             const allDetailedMovies = await Promise.all(detailPromises)
 
-            // Filter out non-movies, documentaries, and behind-the-scenes content
             const cleanMovies = allDetailedMovies.filter(m => {
                 const genre = (m.Genre || "").toLowerCase()
                 const title = (m.Title || "").toLowerCase()
@@ -576,7 +579,6 @@ window.app = {
 
             let finalResults = cleanMovies.slice(0, 10)
             
-            // If the grid isn't full, ask Gemini to recommend related movies to fill it out
             if (finalResults.length > 0 && finalResults.length < 10) {
                 const needed = 10 - finalResults.length
                 document.getElementById('search-loading-text').innerText = `Found ${finalResults.length} matches. Finding ${needed} related movies to fill the grid...`
@@ -598,7 +600,6 @@ window.app = {
                             const relatedMovies = await Promise.all(relatedPromises)
                             const validRelated = relatedMovies.filter(m => m.Response === "True" && m.Type === 'movie')
                             
-                            // Tag AI suggestions so the UI can highlight them
                             validRelated.forEach(m => m.isAiSuggestion = true)
                             
                             finalResults = [...finalResults, ...validRelated]
@@ -690,7 +691,6 @@ window.app = {
 
     callGemini: async function(prompt) {
         try {
-            // Route through Vercel proxy so the key isn't exposed to the client
             const response = await fetch('/api/gemini', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -748,7 +748,6 @@ window.app = {
         content.classList.add('hidden')
         textEl.innerText = ""
 
-        // Send current watchlist state to prevent duplicate recommendations
         const movieTitles = this.watchlist.map(m => `${m.Title} (${m.Year})`).join(', ')
         const prompt = `Based on this list of movies I like: [${movieTitles}], recommend ONE movie I should watch next that is NOT in this list. Provide the title, year, and a 1-sentence reason why I'd like it based on my list. Format: "Movie Title (Year) - Reason". Random seed: ${Math.random()}`
         const result = await this.callGemini(prompt)
@@ -799,7 +798,6 @@ window.app = {
         let watchedSectionHtml = '' 
         let metaGroupHtml = '' 
 
-        // Inline styling used here to bypass Tailwind's compiler for sub-pixel icon alignment
         let scoreHtml = ''
         if (imdbScore) {
             scoreHtml = `
@@ -838,12 +836,14 @@ window.app = {
                 `
             }
         } else {
-            // --- REVERTED BACK TO YOUR WORKING WATCHLIST LOGIC ---
             let starsHtml = ''
             for (let i = 1; i <= 5; i++) {
                 const type = i <= rating ? 'fas' : 'far'
                 const colorClass = i <= rating ? 'text-yellow-500' : 'text-gray-600'
-                starsHtml += `<i class="${type} fa-star text-base ${colorClass}" onclick="app.setRating('${movie.imdbID}', ${i})"></i>`
+                // THE FIX: Added ids and onmouseenter mapping
+                starsHtml += `<i id="star-${movie.imdbID}-${i}" class="${type} fa-star text-lg cursor-pointer transition-colors duration-200 ${colorClass}" 
+                    onclick="app.setRating('${movie.imdbID}', ${i})"
+                    onmouseenter="app.updateStarHover('${movie.imdbID}', ${i})"></i>`
             }
 
             watchedSectionHtml = `
@@ -858,7 +858,7 @@ window.app = {
 
                     <div class="grid transition-all duration-700 ease-in-out grid-rows-[0fr] opacity-0 mt-0 pt-0 border-t border-transparent group-has-[:checked]:grid-rows-[1fr] group-has-[:checked]:opacity-100 group-has-[:checked]:mt-2 group-has-[:checked]:pt-2 group-has-[:checked]:border-gray-700/50">
                         <div class="overflow-hidden min-h-0">
-                            <div class="star-rating flex justify-between px-1">
+                            <div id="star-container-${movie.imdbID}" class="star-rating flex justify-between px-1" onmouseleave="app.resetStarHover('${movie.imdbID}', ${rating})">
                                 ${starsHtml}
                             </div>
                         </div>
@@ -920,22 +920,16 @@ window.app = {
             return
         }
         
-        // Find the movie in the search results
         const searchMovie = this.currentResults.find(m => m.imdbID === imdbID)
         
-        // Prevent dupes
         if (searchMovie && !this.watchlist.some(m => m.imdbID === imdbID)) {
-            // 1. Make a standalone clone of the movie object
             const movieToSave = { ...searchMovie }
             
-            // 2. Set default watchlist states
             movieToSave.isWatched = false
             movieToSave.rating = 0
             
-            // 3. THE FIX: Strip the AI tag so it saves as a normal, clean movie
             delete movieToSave.isAiSuggestion
             
-            // 4. Save and re-render
             this.watchlist.push(movieToSave)
             this.saveWatchlistToCloud()
             this.renderSearchResults(this.currentResults) 
