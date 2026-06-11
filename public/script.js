@@ -223,15 +223,14 @@ window.app = {
 
     subscribeToWatchlist: function() {
         if (!this.user || !this.userKey) return
+        
         if (this.unsubscribeSnapshot) this.unsubscribeSnapshot()
 
         const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom_watchlists', this.userKey)
         
         this.unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
-            // FIX: Block Firebase from re-rendering the screen while CSS animations are running
-            if (this.isAnimating) {
-                return;
-            }
+            // THE FIX: Ignore Firebase updates while the user is actively interacting
+            if (this.isToggling) return;
 
             if (docSnap.exists()) {
                 const data = docSnap.data()
@@ -283,51 +282,32 @@ window.app = {
         const movie = this.watchlist.find(m => m.imdbID === imdbID)
         if (!movie) return
 
-        // FIX: Lock the UI to allow CSS dropdown animation to finish smoothly
-        this.isAnimating = true;
-        
+        this.isToggling = true; // Lock UI to protect CSS drop-down animation
         movie.isWatched = !movie.isWatched
         this.saveWatchlistToCloud()
-        
-        // Release the lock after animation completes
-        setTimeout(() => {
-            this.isAnimating = false
-        }, 1000)
-    },
 
-    // NEW HELPER: Generates stars backwards for pure CSS hovering
-    generateStarsHtml: function(imdbID, currentRating) {
-        let starsHtml = ''
-        // Important: Loop from 5 down to 1 so the CSS `~` sibling selector works
-        for (let i = 5; i >= 1; i--) {
-            const isFilled = i <= currentRating;
-            const type = isFilled ? 'fas' : 'far'
-            const colorClass = isFilled ? 'text-yellow-500' : 'text-gray-600'
-            starsHtml += `<i class="${type} fa-star text-xl hover-star transition-all duration-200 ${colorClass}" 
-                onclick="app.setRating('${imdbID}', ${i})"></i>`
-        }
-        return starsHtml;
+        // Release the lock after animation finishes
+        setTimeout(() => { this.isToggling = false }, 1000); 
     },
 
     setRating: function(imdbID, rating) {
         const movie = this.watchlist.find(m => m.imdbID === imdbID)
         if (movie) {
-            // FIX: Lock the UI to prevent DOM wipe
-            this.isAnimating = true;
-
+            this.isToggling = true; // Lock UI
             movie.rating = rating
             this.saveWatchlistToCloud()
-            
-            // Manually re-render ONLY the specific stars container to preserve the open dropdown
+
+            // Update DOM manually without triggering a full card reload
             const container = document.getElementById(`star-container-${imdbID}`)
             if (container) {
-                container.innerHTML = this.generateStarsHtml(imdbID, rating);
+                const stars = container.querySelectorAll('i');
+                stars.forEach(star => star.classList.remove('active'));
+                
+                const activeIndex = 5 - rating; // Calculate index (stars are 5 to 1)
+                if (stars[activeIndex]) stars[activeIndex].classList.add('active');
             }
 
-            // Release lock
-            setTimeout(() => {
-                this.isAnimating = false;
-            }, 1000)
+            setTimeout(() => { this.isToggling = false }, 1000); // Unlock UI
         }
     },
 
@@ -829,7 +809,13 @@ window.app = {
                 `
             }
         } else {
-            
+            // 1. Generate stars backwards (5 down to 1) for the CSS trick
+            let starsHtml = ''
+            for (let i = 5; i >= 1; i--) {
+                const activeClass = i === rating ? 'active' : ''
+                starsHtml += `<i class="fa-star text-lg ${activeClass}" onclick="app.setRating('${movie.imdbID}', ${i})"></i>`
+            }
+
             watchedSectionHtml = `
                 <div class="bg-gray-800/50 p-3 rounded-xl border border-gray-700/50 mb-3 transition-colors group">
                     <div class="flex items-center justify-between relative z-10">
@@ -842,8 +828,8 @@ window.app = {
 
                     <div class="grid transition-all duration-700 ease-in-out grid-rows-[0fr] opacity-0 mt-0 pt-0 border-t border-transparent group-has-[:checked]:grid-rows-[1fr] group-has-[:checked]:opacity-100 group-has-[:checked]:mt-2 group-has-[:checked]:pt-2 group-has-[:checked]:border-gray-700/50">
                         <div class="overflow-hidden min-h-0">
-                            <div id="star-container-${movie.imdbID}" class="star-rating flex flex-row-reverse justify-end gap-2 px-1 py-1">
-                                ${this.generateStarsHtml(movie.imdbID, rating)}
+                            <div id="star-container-${movie.imdbID}" class="star-rating">
+                                ${starsHtml}
                             </div>
                         </div>
                     </div>

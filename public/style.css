@@ -58,20 +58,31 @@ body {
         }
         
         /* Star Rating */
-        /* Star Rating Hover Magic */
-        .star-rating i.hover-star {
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
+        .star-rating {
+            display: flex;
+            flex-direction: row-reverse; /* Essential for CSS hover fill */
+            justify-content: space-between;
+            padding: 0.5rem 0.25rem;
         }
-
-        /* * Because we used flex-row-reverse, hovering a star applies the effect to it 
-        * AND all following siblings in the HTML (which visually sit to its left).
-         */
-        .star-rating i.hover-star:hover,
-        .star-rating i.hover-star:hover ~ i.hover-star {
-            font-weight: 900 !important; /* Forces the FontAwesome star to be solid */
-            color: #EAB308 !important;   /* Tailwind yellow-500 */
-            transform: scale(1.15);
+        
+        .star-rating i {
+            cursor: pointer;
+            color: #4B5563; /* Tailwind gray-600 */
+            transition: all 0.2s ease;
+            font-weight: 400; /* FontAwesome 'far' (empty star) */
+        }
+        
+        /* The ~ sibling selector fills stars to the left (which are technically after it in HTML) */
+        .star-rating i:hover,
+        .star-rating i:hover ~ i,
+        .star-rating i.active,
+        .star-rating i.active ~ i {
+            font-weight: 900 !important; /* FontAwesome 'fas' (solid star) */
+            color: #EAB308 !important; /* Tailwind yellow-500 */
+        }
+        
+        .star-rating i:hover {
+            transform: scale(1.2);
         }
 
         /* Pick for me Animation */
