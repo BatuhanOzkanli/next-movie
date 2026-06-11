@@ -309,64 +309,79 @@ window.app = {
         }
     },
 
+    updateStarUI: function(imdbID, targetRating) {
+        for (let i = 1; i <= 5; i++) {
+            const star = document.getElementById(`star-${imdbID}-${i}`)
+            if (star) {
+                if (i <= targetRating) {
+                    star.classList.remove('far', 'text-gray-600')
+                    star.classList.add('fas', 'text-yellow-500', 'scale-110')
+                } else {
+                    star.classList.remove('fas', 'text-yellow-500', 'scale-110')
+                    star.classList.add('far', 'text-gray-600')
+                }
+            }
+        }
+    },
+
     pickRandomMovie: function() {
-        const unwatched = this.watchlist.filter(m => !m.isWatched);
-        const pool = unwatched.length > 0 ? unwatched : this.watchlist;
+        const unwatched = this.watchlist.filter(m => !m.isWatched)
+        const pool = unwatched.length > 0 ? unwatched : this.watchlist
 
         if (pool.length === 0) {
-            this.showToast("Add some movies first!");
-            return;
+            this.showToast("Add some movies first!")
+            return
         }
 
-        const modal = document.getElementById('random-modal');
-        const container = document.getElementById('random-movie-container');
-        const spinBtn = document.getElementById('btn-spin-again');
+        const modal = document.getElementById('random-modal')
+        const container = document.getElementById('random-movie-container')
+        const spinBtn = document.getElementById('btn-spin-again')
 
-        if (spinBtn) spinBtn.disabled = true;
+        if (spinBtn) spinBtn.disabled = true
 
-        modal.classList.remove('hidden');
+        modal.classList.remove('hidden')
 
         // 1. Determine the new winner
-        const winningMovie = pool[Math.floor(Math.random() * pool.length)];
+        const winningMovie = pool[Math.floor(Math.random() * pool.length)]
 
         // 2. Build the track array with SMART DUPLICATE PREVENTION
-        const trackItems = [];
-        const startIndex = 2; 
-        const winningIndex = 25; 
+        const trackItems = []
+        const startIndex = 2 
+        const winningIndex = 25 
         
         for (let i = 0; i < 30; i++) {
             if (this.lastTrackItems && i <= 6) {
-                trackItems.push(this.lastTrackItems[23 + i]);
+                trackItems.push(this.lastTrackItems[23 + i])
             } else if (i === winningIndex) {
-                trackItems.push(winningMovie);
+                trackItems.push(winningMovie)
             } else {
-                let randomMovie = pool[Math.floor(Math.random() * pool.length)];
+                let randomMovie = pool[Math.floor(Math.random() * pool.length)]
                 
                 // Prevent identical movies from sitting side-by-side
                 if (pool.length > 1 && i > 0) {
-                    let attempts = 0;
+                    let attempts = 0
                     while (
                         (randomMovie.imdbID === trackItems[i - 1].imdbID || 
                         (i === winningIndex - 1 && randomMovie.imdbID === winningMovie.imdbID)) 
                         && attempts < 15
                     ) {
-                        randomMovie = pool[Math.floor(Math.random() * pool.length)];
-                        attempts++; 
+                        randomMovie = pool[Math.floor(Math.random() * pool.length)]
+                        attempts++ 
                     }
                 }
-                trackItems.push(randomMovie);
+                trackItems.push(randomMovie)
             }
         }
 
-        this.lastTrackItems = trackItems;
+        this.lastTrackItems = trackItems
 
         // INCREASED GAP: Changed from gap-4 to gap-6 for breathing room
-        let trackHtml = `<div id="roulette-track" class="flex items-center gap-4" style="transform: translateX(0px); width: max-content;">`;
+        let trackHtml = `<div id="roulette-track" class="flex items-center gap-4" style="transform: translateX(0px) width: max-content">`
 
         trackItems.forEach((m, idx) => {
-            const posterUrl = (m.Poster && m.Poster !== 'N/A') ? m.Poster : null;
+            const posterUrl = (m.Poster && m.Poster !== 'N/A') ? m.Poster : null
             trackHtml += `
-                <div class="roulette-card flex-shrink-0 transition-all duration-500 opacity-40" id="card-${idx}" style="width: 144px; height: 224px; min-width: 144px; min-height: 224px;">
+                <div class="roulette-card flex-shrink-0 transition-all duration-500 opacity-40" id="card-${idx}" style="width: 144px height: 224px min-width: 144px min-height: 224px">
                     <div class="relative rounded-xl overflow-hidden shadow-xl border-4 border-gray-800 bg-gray-900 w-full h-full block">
                         ${posterUrl 
                             ? `<img src="${posterUrl}" class="absolute inset-0 w-full h-full object-cover">` 
@@ -374,24 +389,24 @@ window.app = {
                         }
                     </div>
                 </div>
-            `;
-        });
-        trackHtml += `</div>`;
+            `
+        })
+        trackHtml += `</div>`
 
-        const imdbScore = (winningMovie.imdbRating && winningMovie.imdbRating !== 'N/A') ? winningMovie.imdbRating : null;
-        let scoreHtml = '';
+        const imdbScore = (winningMovie.imdbRating && winningMovie.imdbRating !== 'N/A') ? winningMovie.imdbRating : null
+        let scoreHtml = ''
         if (imdbScore) {
             scoreHtml = `
                 <div class="flex items-center justify-center text-yellow-500 font-bold mt-2" title="IMDb Rating: ${imdbScore}">
-                    <i class="fas fa-star text-sm" style="margin-right: 8px; position: relative; top: -1px;"></i>
+                    <i class="fas fa-star text-sm" style="margin-right: 8px position: relative top: -1px"></i>
                     <span class="text-lg">${imdbScore}</span>
                 </div>
-            `;
+            `
         }
 
         // TIGHTER CONTAINER: Tighter fade mask (80px) to look better on the smaller max-w-lg modal
         container.innerHTML = `
-            <div class="relative w-full overflow-hidden py-4" style="-webkit-mask-image: linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent); mask-image: linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent);">
+            <div class="relative w-full overflow-hidden py-4" style="-webkit-mask-image: linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent) mask-image: linear-gradient(to right, transparent, black 80px, black calc(100% - 80px), transparent)">
                 <div class="absolute top-0 bottom-0 left-1/2 w-1.5 bg-yellow-500 z-10 transform -translate-x-1/2 shadow-[0_0_15px_rgba(234,179,8,0.8)] rounded-full"></div>
                 ${trackHtml}
             </div>
@@ -401,49 +416,49 @@ window.app = {
                 <p class="text-pink-300 font-mono text-sm">${winningMovie.Year}</p>
                 ${scoreHtml}
             </div>
-        `;
+        `
 
-        const track = document.getElementById('roulette-track');
-        const startCard = document.getElementById(`card-${startIndex}`);
-        const winnerCard = document.getElementById(`card-${winningIndex}`);
+        const track = document.getElementById('roulette-track')
+        const startCard = document.getElementById(`card-${startIndex}`)
+        const winnerCard = document.getElementById(`card-${winningIndex}`)
         
-        const containerCenter = container.offsetWidth / 2;
-        const startCenter = startCard.offsetLeft + (startCard.offsetWidth / 2);
-        const initialDistance = containerCenter - startCenter;
+        const containerCenter = container.offsetWidth / 2
+        const startCenter = startCard.offsetLeft + (startCard.offsetWidth / 2)
+        const initialDistance = containerCenter - startCenter
 
-        track.style.transform = `translateX(${initialDistance}px)`;
+        track.style.transform = `translateX(${initialDistance}px)`
 
         // Highlight previous winner (No scaling)
-        startCard.classList.remove('opacity-40');
-        startCard.classList.add('opacity-100');
-        startCard.querySelector('.border-4').classList.replace('border-gray-800', 'border-yellow-500');
+        startCard.classList.remove('opacity-40')
+        startCard.classList.add('opacity-100')
+        startCard.querySelector('.border-4').classList.replace('border-gray-800', 'border-yellow-500')
 
-        void track.offsetWidth; 
+        void track.offsetWidth 
 
         setTimeout(() => {
             // Un-highlight previous winner
-            startCard.classList.add('opacity-40');
-            startCard.classList.remove('opacity-100');
-            startCard.querySelector('.border-4').classList.replace('border-yellow-500', 'border-gray-800');
+            startCard.classList.add('opacity-40')
+            startCard.classList.remove('opacity-100')
+            startCard.querySelector('.border-4').classList.replace('border-yellow-500', 'border-gray-800')
 
-            track.style.transition = 'transform 4s cubic-bezier(0.15, 0.85, 0.3, 1)';
+            track.style.transition = 'transform 4s cubic-bezier(0.15, 0.85, 0.3, 1)'
             
-            const winnerCenter = winnerCard.offsetLeft + (winnerCard.offsetWidth / 2);
-            const finalDistance = containerCenter - winnerCenter;
-            track.style.transform = `translateX(${finalDistance}px)`;
+            const winnerCenter = winnerCard.offsetLeft + (winnerCard.offsetWidth / 2)
+            const finalDistance = containerCenter - winnerCenter
+            track.style.transform = `translateX(${finalDistance}px)`
 
             setTimeout(() => {
                 // Highlight new winner (No scaling, just opacity and glowing border)
-                winnerCard.classList.remove('opacity-40');
-                winnerCard.classList.add('opacity-100', 'z-20');
-                winnerCard.querySelector('.border-4').classList.replace('border-gray-800', 'border-yellow-500');
-                winnerCard.querySelector('.border-4').classList.add('shadow-[0_0_30px_rgba(234,179,8,0.4)]');
+                winnerCard.classList.remove('opacity-40')
+                winnerCard.classList.add('opacity-100', 'z-20')
+                winnerCard.querySelector('.border-4').classList.replace('border-gray-800', 'border-yellow-500')
+                winnerCard.querySelector('.border-4').classList.add('shadow-[0_0_30px_rgba(234,179,8,0.4)]')
 
-                document.getElementById('winner-info').classList.remove('opacity-0');
-                if (spinBtn) spinBtn.disabled = false;
-            }, 4000);
+                document.getElementById('winner-info').classList.remove('opacity-0')
+                if (spinBtn) spinBtn.disabled = false
+            }, 4000)
 
-        }, 150); 
+        }, 150) 
     },
 
     switchView: function(viewName) {
@@ -823,12 +838,17 @@ window.app = {
                 `
             }
         } else {
+            // --- WATCHLIST LOGIC ---
             let starsHtml = ''
-            // Loop backwards (5 to 1) so pure CSS can handle the fill-on-hover effect
-            for (let i = 5; i >= 1; i--) {
-            const type = i <= rating ? 'fas' : 'far'
-            const colorClass = i <= rating ? 'text-yellow-500' : 'text-gray-600'
-            starsHtml += `<i class="${type} fa-star text-lg ${colorClass} hover-star" onclick="app.setRating('${movie.imdbID}', ${i})"></i>`
+            for (let i = 1; i <= 5; i++) {
+                const type = i <= rating ? 'fas' : 'far'
+                const colorClass = i <= rating ? 'text-yellow-500' : 'text-gray-600'
+
+                // Added ID, hover scaling, and mouse tracking
+                starsHtml += `<i id="star-${movie.imdbID}-${i}" 
+                    class="${type} fa-star text-base ${colorClass} cursor-pointer transition-all duration-200" 
+                    onclick="app.setRating('${movie.imdbID}', ${i})"
+                    onmouseenter="app.updateStarUI('${movie.imdbID}', ${i})"></i>`
             }
 
             watchedSectionHtml = `
@@ -840,10 +860,11 @@ window.app = {
                             <span class="ml-2 text-sm font-semibold transition-colors duration-300 text-gray-400 group-hover/toggle:text-gray-200 peer-checked:text-green-400">Watched</span>
                         </label>
                     </div>
+
                     <div class="grid transition-all duration-700 ease-in-out grid-rows-[0fr] opacity-0 mt-0 pt-0 border-t border-transparent group-has-[:checked]:grid-rows-[1fr] group-has-[:checked]:opacity-100 group-has-[:checked]:mt-2 group-has-[:checked]:pt-2 group-has-[:checked]:border-gray-700/50">
                         <div class="overflow-hidden min-h-0">
-                            <div class="star-rating flex flex-row-reverse justify-end gap-1 px-1 mt-1">
-                            ${starsHtml}
+                            <div class="star-rating flex justify-between px-1" onmouseleave="app.updateStarUI('${movie.imdbID}', ${rating})">
+                                ${starsHtml}
                             </div>
                         </div>
                     </div>
@@ -947,4 +968,5 @@ window.app = {
 
 document.addEventListener('DOMContentLoaded', () => {
     app.init()
-}) 
+})
+
