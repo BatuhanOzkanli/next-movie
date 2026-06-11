@@ -804,7 +804,7 @@ window.app = {
         if (imdbScore) {
             scoreHtml = `
             <div class="flex items-center text-yellow-500 font-bold mr-2" title="IMDb Rating: ${imdbScore}">
-            <i class="fas fa-star text-[10px]" style="margin-right: 4px position: relative top: -0.5px"></i>
+            <i class="fas fa-star text-[10px]" style="margin-right: 4px; position: relative; top: -0.5px"></i>
             <span>${imdbScore}</span>
         </div>
     `
@@ -838,17 +838,12 @@ window.app = {
                 `
             }
         } else {
-            // --- WATCHLIST LOGIC ---
+            // --- REVERTED BACK TO YOUR WORKING WATCHLIST LOGIC ---
             let starsHtml = ''
             for (let i = 1; i <= 5; i++) {
                 const type = i <= rating ? 'fas' : 'far'
                 const colorClass = i <= rating ? 'text-yellow-500' : 'text-gray-600'
-
-                // Added ID, hover scaling, and mouse tracking
-                starsHtml += `<i id="star-${movie.imdbID}-${i}" 
-                    class="${type} fa-star text-base ${colorClass} cursor-pointer transition-all duration-200" 
-                    onclick="app.setRating('${movie.imdbID}', ${i})"
-                    onmouseenter="app.updateStarUI('${movie.imdbID}', ${i})"></i>`
+                starsHtml += `<i class="${type} fa-star text-base ${colorClass}" onclick="app.setRating('${movie.imdbID}', ${i})"></i>`
             }
 
             watchedSectionHtml = `
@@ -863,7 +858,7 @@ window.app = {
 
                     <div class="grid transition-all duration-700 ease-in-out grid-rows-[0fr] opacity-0 mt-0 pt-0 border-t border-transparent group-has-[:checked]:grid-rows-[1fr] group-has-[:checked]:opacity-100 group-has-[:checked]:mt-2 group-has-[:checked]:pt-2 group-has-[:checked]:border-gray-700/50">
                         <div class="overflow-hidden min-h-0">
-                            <div class="star-rating flex justify-between px-1" onmouseleave="app.updateStarUI('${movie.imdbID}', ${rating})">
+                            <div class="star-rating flex justify-between px-1">
                                 ${starsHtml}
                             </div>
                         </div>
