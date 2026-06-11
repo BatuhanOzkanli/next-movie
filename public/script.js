@@ -290,25 +290,42 @@ window.app = {
         setTimeout(() => { this.isToggling = false }, 1000); 
     },
 
+    // 1. Handles the actual clicking/saving
     setRating: function(imdbID, rating) {
         const movie = this.watchlist.find(m => m.imdbID === imdbID)
         if (movie) {
-            this.isToggling = true; // Lock UI
-            movie.rating = rating
-            this.saveWatchlistToCloud()
+            this.isToggling = true; // Lock UI to prevent dropdown from snapping shut
+            movie.rating = rating;
+            this.saveWatchlistToCloud();
 
-            // Update DOM manually without triggering a full card reload
-            const container = document.getElementById(`star-container-${imdbID}`)
-            if (container) {
-                const stars = container.querySelectorAll('i');
-                stars.forEach(star => star.classList.remove('active'));
-                
-                const activeIndex = 5 - rating; // Calculate index (stars are 5 to 1)
-                if (stars[activeIndex]) stars[activeIndex].classList.add('active');
-            }
+            // Visually lock in the stars instantly without reloading the card
+            this.updateStarUI(imdbID, rating);
 
-            setTimeout(() => { this.isToggling = false }, 1000); // Unlock UI
+            setTimeout(() => { this.isToggling = false }, 1000); 
         }
+    },
+
+    // 2. Swaps FontAwesome classes perfectly as you drag your mouse
+    updateStarUI: function(imdbID, hoverRating) {
+        for (let i = 1; i <= 5; i++) {
+            const star = document.getElementById(`star-${imdbID}-${i}`);
+            if (star) {
+                if (i <= hoverRating) {
+                    star.classList.remove('far', 'text-gray-600');
+                    star.classList.add('fas', 'text-yellow-500');
+                } else {
+                    star.classList.remove('fas', 'text-yellow-500');
+                    star.classList.add('far', 'text-gray-600');
+                }
+            }
+        }
+    },
+
+    // 3. THE FIX: Always fetches the freshest data from the array when mouse leaves
+    resetStarUI: function(imdbID) {
+        const movie = this.watchlist.find(m => m.imdbID === imdbID);
+        const actualRating = movie ? (movie.rating || 0) : 0;
+        this.updateStarUI(imdbID, actualRating);
     },
 
     pickRandomMovie: function() {
@@ -809,11 +826,15 @@ window.app = {
                 `
             }
         } else {
-            // 1. Generate stars backwards (5 down to 1) for the CSS trick
+            // Standard 1 to 5 loop with JS hover tracking
             let starsHtml = ''
-            for (let i = 5; i >= 1; i--) {
-                const activeClass = i === rating ? 'active' : ''
-                starsHtml += `<i class="fa-star text-lg ${activeClass}" onclick="app.setRating('${movie.imdbID}', ${i})"></i>`
+            for (let i = 1; i <= 5; i++) {
+                const type = i <= rating ? 'fas' : 'far'
+                const colorClass = i <= rating ? 'text-yellow-500' : 'text-gray-600'
+                
+                starsHtml += `<i id="star-${movie.imdbID}-${i}" class="${type} fa-star text-lg cursor-pointer transition-colors duration-200 ${colorClass}" 
+                    onclick="app.setRating('${movie.imdbID}', ${i})"
+                    onmouseenter="app.updateStarUI('${movie.imdbID}', ${i})"></i>`
             }
 
             watchedSectionHtml = `
@@ -828,7 +849,7 @@ window.app = {
 
                     <div class="grid transition-all duration-700 ease-in-out grid-rows-[0fr] opacity-0 mt-0 pt-0 border-t border-transparent group-has-[:checked]:grid-rows-[1fr] group-has-[:checked]:opacity-100 group-has-[:checked]:mt-2 group-has-[:checked]:pt-2 group-has-[:checked]:border-gray-700/50">
                         <div class="overflow-hidden min-h-0">
-                            <div id="star-container-${movie.imdbID}" class="star-rating">
+                            <div id="star-container-${movie.imdbID}" class="star-rating flex justify-between px-1 py-1" onmouseleave="app.resetStarUI('${movie.imdbID}')">
                                 ${starsHtml}
                             </div>
                         </div>
