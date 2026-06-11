@@ -1,0 +1,86 @@
+body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #FFFFFF;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #121212; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4B5563; 
+        }
+
+        .movie-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .movie-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+        }
+
+        .placeholder-poster {
+            background: linear-gradient(45deg, #1f2937, #111827);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4b5563;
+        }
+
+        /* Overlay for poster on hover */
+        .poster-container:hover .poster-overlay {
+            opacity: 1;
+        }
+        .poster-overlay {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            background: rgba(0,0,0,0.6);
+        }
+
+        /* Toggle Switch Fix */
+        .toggle-checkbox {
+            transition: all 0.3s ease-in-out;
+        }
+        .toggle-checkbox:checked {
+            transform: translateX(100%);
+            border-color: #c084fc; /* Purple-400 */
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #c084fc; /* Purple-400 */
+        }
+        
+        /* Star Rating */
+        /* Star Rating Hover Magic */
+        .star-rating i.hover-star {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        /* * Because we used flex-row-reverse, hovering a star applies the effect to it 
+        * AND all following siblings in the HTML (which visually sit to its left).
+         */
+        .star-rating i.hover-star:hover,
+        .star-rating i.hover-star:hover ~ i.hover-star {
+            font-weight: 900 !important; /* Forces the FontAwesome star to be solid */
+            color: #EAB308 !important;   /* Tailwind yellow-500 */
+            transform: scale(1.15);
+        }
+
+        /* Pick for me Animation */
+        @keyframes highlightPulse {
+            0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); border-color: #EAB308; transform: scale(1); }
+            50% { box-shadow: 0 0 20px 10px rgba(234, 179, 8, 0.2); border-color: #fff; transform: scale(1.05); }
+            100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); border-color: #EAB308; transform: scale(1); }
+        }
+        .picked-movie-highlight {
+            animation: highlightPulse 2s infinite;
+            z-index: 50;
+        }

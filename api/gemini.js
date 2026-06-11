@@ -1,25 +1,27 @@
 export default async function handler(req, res) {
-    // Only allow four frontend to POST data to this secure route
-    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed')
-
-        const { prompt } = req.body
-        const apiKey = process.env.GEMINI_API_KEY
-
-        try {
-            // Forward the request to Google's Gemini servers securely
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{parts: [{ text: prompt }] }]
-                })
-            })
-
-            const data = await response.json()
-            res.status(200).json(data) // Send the AI's answer back to the frontend
-        } catch (error) {
-            console.error(error)
-            res.status(500).json({ error: 'Failed to fetch AI' })
-        }
+    const { prompt } = req.body;
+    const GEMINI_KEY = process.env.GEMINI_KEY;
     
+    // Updated to the correct, modern, stable Gemini 2.5 Flash model
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            return res.status(response.status).json({ error: 'Gemini API error', details: errorData });
+        }
+
+        const data = await response.json();
+        const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No response generated.";
+
+        res.status(200).json({ text: generatedText });
+    } catch (error) {
+        res.status(500).json({ error: 'Gemini failed', message: error.message });
+    }
 }
