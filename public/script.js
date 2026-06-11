@@ -286,6 +286,16 @@ window.app = {
         movie.isWatched = !movie.isWatched
         this.saveWatchlistToCloud()
 
+        // Manually gray out the card visually so we don't have to wait for a refresh
+        const card = document.getElementById(`movie-card-${imdbID}`);
+        if (card) {
+            if (movie.isWatched) {
+                card.classList.add('opacity-80', 'grayscale-[0.3]');
+            } else {
+                card.classList.remove('opacity-80', 'grayscale-[0.3]');
+            }
+        }
+
         // Release the lock after animation finishes
         setTimeout(() => { this.isToggling = false }, 1000); 
     },
@@ -865,7 +875,7 @@ window.app = {
         }
 
         return `
-            <div class="movie-card bg-[#1A1A1A] rounded-xl overflow-hidden shadow-lg border ${borderClass} flex flex-col h-full relative group/card ${isWatched && context === 'watchlist' ? 'opacity-80 grayscale-[0.3] hover:opacity-100 hover:grayscale-0' : ''}">
+            <div id="movie-card-${movie.imdbID}" class="movie-card bg-[#1A1A1A] rounded-xl overflow-hidden shadow-lg border ${borderClass} flex flex-col h-full relative group/card ${isWatched && context === 'watchlist' ? 'opacity-80 grayscale-[0.3] hover:opacity-100 hover:grayscale-0' : ''}">
                 
                 ${badgeHtml}
 

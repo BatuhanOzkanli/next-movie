@@ -60,21 +60,8 @@ body {
         /* Star Rating */
         .star-rating i {
             cursor: pointer;
-            transition: transform 0.2s ease, color 0.2s ease;
+            transition: transform 0.15s ease, color 0.15s ease;
         }
-        .star-rating i:hover {
-            transform: scale(1.2);
-        }
-
-        /* The ~ sibling selector fills stars to the left (which are technically after it in HTML) */
-        .star-rating i:hover,
-        .star-rating i:hover ~ i,
-        .star-rating i.active,
-        .star-rating i.active ~ i {
-            font-weight: 900 !important; /* FontAwesome 'fas' (solid star) */
-            color: #EAB308 !important; /* Tailwind yellow-500 */
-        }
-
         .star-rating i:hover {
             transform: scale(1.2);
         }
