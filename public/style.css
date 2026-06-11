@@ -58,20 +58,14 @@ body {
         }
         
         /* Star Rating */
-        .star-rating {
-            display: flex;
-            flex-direction: row-reverse; /* Essential for CSS hover fill */
-            justify-content: space-between;
-            padding: 0.5rem 0.25rem;
-        }
-        
         .star-rating i {
             cursor: pointer;
-            color: #4B5563; /* Tailwind gray-600 */
-            transition: all 0.2s ease;
-            font-weight: 400; /* FontAwesome 'far' (empty star) */
+            transition: transform 0.2s ease, color 0.2s ease;
         }
-        
+        .star-rating i:hover {
+            transform: scale(1.2);
+        }
+
         /* The ~ sibling selector fills stars to the left (which are technically after it in HTML) */
         .star-rating i:hover,
         .star-rating i:hover ~ i,
@@ -80,7 +74,7 @@ body {
             font-weight: 900 !important; /* FontAwesome 'fas' (solid star) */
             color: #EAB308 !important; /* Tailwind yellow-500 */
         }
-        
+
         .star-rating i:hover {
             transform: scale(1.2);
         }
