@@ -947,4 +947,4 @@ window.app = {
 
 document.addEventListener('DOMContentLoaded', () => {
     app.init()
-})
+}) 
