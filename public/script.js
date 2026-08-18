@@ -279,25 +279,35 @@ window.app = {
     },
 
     toggleWatched: function(imdbID) {
-        const movie = this.watchlist.find(m => m.imdbID === imdbID)
-        if (!movie) return
+    const movie = this.watchlist.find(m => m.imdbID === imdbID)
+    if (!movie) return
 
-        this.isToggling = true; // Lock UI to protect CSS drop-down animation
-        movie.isWatched = !movie.isWatched
-        this.saveWatchlistToCloud()
+    this.isToggling = true
+    movie.isWatched = !movie.isWatched
+    this.saveWatchlistToCloud()
 
-        // Manually gray out the card visually so we don't have to wait for a refresh
-        const card = document.getElementById(`movie-card-${imdbID}`);
-        if (card) {
-            if (movie.isWatched) {
-                card.classList.add('opacity-80', 'grayscale-[0.3]');
-            } else {
-                card.classList.remove('opacity-80', 'grayscale-[0.3]');
-            }
+    const card = document.getElementById(`movie-card-${imdbID}`);
+    if (card) {
+        if (movie.isWatched) {
+            card.classList.add('opacity-80', 'grayscale-[0.3]');
+        } else {
+            card.classList.remove('opacity-80', 'grayscale-[0.3]');
         }
+    }
 
-        // Release the lock after animation finishes
-        setTimeout(() => { this.isToggling = false }, 1000); 
+    // NEW: reveal/hide the star row directly, no CSS :has() dependency
+    const starWrapper = document.getElementById(`star-wrapper-${imdbID}`)
+    if (starWrapper) {
+        if (movie.isWatched) {
+            starWrapper.classList.remove('grid-rows-[0fr]', 'opacity-0', 'mt-0', 'pt-0', 'border-transparent')
+            starWrapper.classList.add('grid-rows-[1fr]', 'opacity-100', 'mt-2', 'pt-2', 'border-gray-700/50')
+        } else {
+            starWrapper.classList.remove('grid-rows-[1fr]', 'opacity-100', 'mt-2', 'pt-2', 'border-gray-700/50')
+            starWrapper.classList.add('grid-rows-[0fr]', 'opacity-0', 'mt-0', 'pt-0', 'border-transparent')
+        }
+    }
+
+    setTimeout(() => { this.isToggling = false }, 1000);
     },
 
     // 1. Handles the actual clicking/saving
@@ -857,7 +867,7 @@ window.app = {
                         </label>
                     </div>
 
-                    <div class="grid transition-all duration-700 ease-in-out grid-rows-[0fr] opacity-0 mt-0 pt-0 border-t border-transparent group-has-[:checked]:grid-rows-[1fr] group-has-[:checked]:opacity-100 group-has-[:checked]:mt-2 group-has-[:checked]:pt-2 group-has-[:checked]:border-gray-700/50">
+                    <div id="star-wrapper-${movie.imdbID}" class="grid transition-all duration-700 ease-in-out border-t ${isWatched ? 'grid-rows-[1fr] opacity-100 mt-2 pt-2 border-gray-700/50' : 'grid-rows-[0fr] opacity-0 mt-0 pt-0 border-transparent'}">
                         <div class="overflow-hidden min-h-0">
                             <div id="star-container-${movie.imdbID}" class="star-rating flex justify-between px-1 py-1" onmouseleave="app.resetStarUI('${movie.imdbID}')">
                                 ${starsHtml}
