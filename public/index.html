@@ -31,9 +31,9 @@
                     
                     <div class="h-6 w-px bg-gray-700"></div>
 
-                    <button id="btn-header-sync" class="flex items-center space-x-2 bg-[#1A1A1A] hover:bg-[#252525] border border-gray-700 text-gray-300 px-3 py-1.5 rounded-full text-xs font-mono transition-colors" title="Click to sync devices">
-                        <i class="fas fa-key text-yellow-500"></i>
-                        <span id="header-key-display">Loading...</span>
+                    <button id="btn-header-account" class="flex items-center space-x-2 bg-[#1A1A1A] hover:bg-[#252525] border border-gray-700 text-gray-300 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors">
+                        <i class="fas fa-user-circle text-yellow-500"></i>
+                        <span id="header-account-label">Sign In</span>
                     </button>
                 </div>
 
@@ -49,8 +49,8 @@
             <div class="px-2 pt-2 pb-3 space-y-1">
                 <button id="mobile-nav-search" class="block w-full text-left text-white hover:bg-gray-800 px-3 py-2 rounded-md text-base font-medium">Search Movies</button>
                 <button id="mobile-nav-watchlist" class="block w-full text-left text-gray-300 hover:bg-gray-800 px-3 py-2 rounded-md text-base font-medium">My Watchlist</button>
-                <button id="mobile-nav-sync" class="block w-full text-left text-yellow-500 hover:bg-gray-800 px-3 py-2 rounded-md text-base font-medium">
-                    <i class="fas fa-key mr-2"></i> Sync Devices
+                <button id="mobile-nav-account" class="block w-full text-left text-yellow-500 hover:bg-gray-800 px-3 py-2 rounded-md text-base font-medium">
+                    <i class="fas fa-user mr-2"></i> <span id="mobile-account-label">Sign In</span>
                 </button>
             </div>
         </div>
@@ -114,15 +114,53 @@
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-2 mb-1">
                         <h2 class="text-3xl font-bold text-white">My Watchlist</h2>
                         
-                        <div class="flex items-center gap-2">
-                            <button id="btn-copy-key-watchlist" class="bg-[#1A1A1A] hover:bg-[#252525] border border-gray-700 text-yellow-500 text-xs px-2 py-1 rounded font-mono transition-colors flex items-center gap-1" title="Click to copy key">
-                                <i class="fas fa-key text-[10px]"></i> <span id="watchlist-key-display">...</span>
-                            </button>
+                                            <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-80 z-[90] hidden flex items-center justify-center backdrop-blur-sm px-4">
+                        <div class="bg-[#1E1E1E] rounded-xl max-w-md w-full p-6 border border-gray-700 shadow-2xl">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 id="auth-modal-title" class="text-xl font-bold text-white">Sign In</h3>
+                                <button id="btn-close-auth-modal" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+                            </div>
+                        
+                            <div id="auth-form-section">
+                                <button id="btn-google-signin" class="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2.5 rounded-lg transition-colors mb-4">
+                                    <i class="fab fa-google text-red-500"></i> Continue with Google
+                                </button>
                             
-                            <button id="btn-open-import" class="bg-[#1A1A1A] hover:bg-[#252525] border border-gray-700 text-gray-300 text-xs px-2 py-1 rounded transition-colors hover:text-white">
-                                Have a key from another device?
-                            </button>
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="flex-grow h-px bg-gray-700"></div>
+                                    <span class="text-xs text-gray-500 uppercase">or</span>
+                                    <div class="flex-grow h-px bg-gray-700"></div>
+                                </div>
+                            
+                                <div id="auth-error-message" class="hidden bg-red-900/30 border border-red-700/50 text-red-300 text-sm px-3 py-2 rounded mb-4"></div>
+                            
+                                <div class="space-y-3">
+                                    <input type="email" id="input-auth-email" placeholder="Email" class="w-full bg-[#2B2B2B] border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
+                                    <input type="password" id="input-auth-password" placeholder="Password" class="w-full bg-[#2B2B2B] border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
+                                </div>
+                            
+                                <button id="btn-auth-submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2.5 rounded-lg transition-colors mt-4">
+                                    Sign In
+                                </button>
+                            
+                                <p class="text-center text-sm text-gray-400 mt-4">
+                                    <span id="auth-switch-text">Don't have an account?</span>
+                                    <a href="#" id="link-auth-switch" class="text-yellow-500 hover:text-yellow-400 font-semibold">Sign Up</a>
+                                </p>
+                                <p class="text-center text-xs text-gray-500 mt-2">
+                                    <a href="#" id="link-forgot-password" class="hover:text-gray-300">Forgot password?</a>
+                                </p>
+                            </div>
+                        
+                            <div id="account-section" class="hidden text-center">
+                                <i class="fas fa-user-circle text-5xl text-yellow-500 mb-3"></i>
+                                <p class="text-gray-300 mb-6">Signed in as <br><span id="account-email-display" class="text-white font-semibold"></span></p>
+                                <button id="btn-sign-out" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2.5 rounded-lg transition-colors">
+                                    Sign Out
+                                </button>
+                            </div>
                         </div>
+                    </div>
                     </div>
                     <p class="text-gray-400">Movies you want to watch later.</p>
                 </div>
@@ -143,6 +181,14 @@
                 <button id="btn-mobile-ai" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-bold flex justify-center items-center gap-2">
                     <i class="fas fa-sparkles text-yellow-300"></i> Get AI Recommendation
                 </button>
+            </div>
+
+                        <div id="migration-prompt" class="hidden mb-6 bg-indigo-900/30 border border-indigo-500/40 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p class="text-indigo-200 text-sm">Found <span id="migration-count" class="font-bold"></span> movies from your previous device key. Import them into this account?</p>
+                <div class="flex gap-2 flex-shrink-0">
+                    <button id="btn-migration-confirm" class="bg-yellow-500 hover:bg-yellow-600 text-black text-sm font-bold px-4 py-2 rounded-lg transition-colors">Import</button>
+                    <button id="btn-migration-dismiss" class="text-gray-400 hover:text-white text-sm px-3">Dismiss</button>
+                </div>
             </div>
 
             <div id="ai-recommendation-area" class="hidden mb-8 bg-gradient-to-r from-gray-900 to-indigo-900/40 rounded-xl p-6 border border-indigo-500/30 relative overflow-hidden">
@@ -176,47 +222,6 @@
             </div>
         </div>
     </main>
-
-    <div id="key-modal" class="fixed inset-0 bg-black bg-opacity-80 z-[90] hidden flex items-center justify-center backdrop-blur-sm px-4">
-        <div class="bg-[#1E1E1E] rounded-xl max-w-md w-full p-6 border border-gray-700 shadow-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-white">Sync Devices</h3>
-                <button id="btn-close-key-modal" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
-            </div>
-
-            <div class="mb-6">
-                <p class="text-sm text-gray-400 mb-2">Your Current Key:</p>
-                <div class="flex gap-2">
-                    <div class="flex-grow bg-[#2B2B2B] p-3 rounded text-yellow-500 font-mono text-center tracking-wider border border-gray-700 select-all" id="modal-key-display">loading...</div>
-                    <button id="btn-copy-key-modal" class="bg-gray-700 hover:bg-gray-600 text-white px-4 rounded transition-colors">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                </div>
-            </div>
-
-            <div class="border-t border-gray-700 pt-6">
-                <p class="text-sm text-gray-400 mb-2">Have a key from another device?</p>
-                <div class="flex gap-2">
-                    <input type="text" id="input-sync-key" placeholder="Enter key (e.g. user_...)" class="flex-grow bg-[#2B2B2B] border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
-                    <button id="btn-load-key" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-4 rounded transition-colors">Load</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div id="import-modal" class="fixed inset-0 bg-black bg-opacity-80 z-[90] hidden flex items-center justify-center backdrop-blur-sm px-4">
-        <div class="bg-[#1E1E1E] rounded-xl max-w-md w-full p-6 border border-gray-700 shadow-2xl">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-bold text-white">Import Watchlist</h3>
-                <button id="btn-close-import-modal" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
-            </div>
-            <p class="text-sm text-gray-400 mb-4">Enter the key from another device.</p>
-            <div class="flex gap-2">
-                <input type="text" id="input-import-key-pure" placeholder="Enter key..." class="flex-grow bg-[#2B2B2B] border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
-                <button id="btn-load-import-pure" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold px-4 rounded transition-colors">Load Watchlist</button>
-            </div>
-        </div>
-    </div>
 
     <div id="random-modal" class="fixed inset-0 bg-black bg-opacity-90 z-[95] hidden flex items-center justify-center backdrop-blur-md px-4">
     <div class="bg-[#1E1E1E] rounded-xl max-w-lg w-full p-8 border-2 border-pink-500 shadow-[0_0_50px_rgba(236,72,153,0.3)] text-center relative overflow-hidden">

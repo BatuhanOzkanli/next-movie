@@ -1,6 +1,15 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js'
-import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js'
-import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js'
+import { 
+    getAuth, 
+    onAuthStateChanged, 
+    GoogleAuthProvider, 
+    signInWithPopup, 
+    createUserWithEmailAndPassword, 
+    signInWithEmailAndPassword, 
+    signOut,
+    sendPasswordResetEmail
+} from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js'
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js'
 
 const firebaseConfig = {
     apiKey: "AIzaSyALScMi3gA2o1ZNrUyXI3_GoAEFC4gJuhw",
@@ -24,6 +33,7 @@ window.app = {
     unsubscribeSnapshot: null,
     searchMode: 'title', 
     isAnimating: false, // NEW: UI Lock flag to protect animations
+    authMode: 'login',
     
     init: async function() {
         document.getElementById('nav-logo')?.addEventListener('click', () => this.resetToHome())
@@ -64,32 +74,30 @@ window.app = {
         document.getElementById('btn-close-ai-modal')?.addEventListener('click', () => this.closeAiModal())
         document.getElementById('btn-close-ai-modal-btn')?.addEventListener('click', () => this.closeAiModal())
 
-        this.userKey = localStorage.getItem('fyf_user_key')
-        if (!this.userKey) {
-            this.userKey = 'user_' + Math.random().toString(36).substring(2, 9)
-            localStorage.setItem('fyf_user_key', this.userKey)
-        }
-        this.updateKeyDisplay()
+        document.getElementById('btn-header-account')?.addEventListener('click', () => this.openAuthModal())
+        document.getElementById('mobile-nav-account')?.addEventListener('click', () => this.openAuthModal())
+        document.getElementById('btn-close-auth-modal')?.addEventListener('click', () => this.closeAuthModal())
+        document.getElementById('btn-google-signin')?.addEventListener('click', () => this.signInWithGoogle())
+        document.getElementById('btn-auth-submit')?.addEventListener('click', () => this.handleEmailAuth())
+        document.getElementById('link-auth-switch')?.addEventListener('click', (e) => { e.preventDefault(); this.switchAuthMode() })
+        document.getElementById('link-forgot-password')?.addEventListener('click', (e) => { e.preventDefault(); this.handleForgotPassword() })
+        document.getElementById('btn-sign-out')?.addEventListener('click', () => this.signOutUser())
+        document.getElementById('btn-migration-confirm')?.addEventListener('click', () => this.confirmMigration())
+        document.getElementById('btn-migration-dismiss')?.addEventListener('click', () => this.dismissMigration())
+
+        this.userKey = localStorage.getItem('fyf_user_key') // kept only to migrate old watchlists
         this.updateNavState('search')
-        
+
         onAuthStateChanged(auth, (user) => {
+            this.user = user
             if (user) {
-                this.user = user
-                this.subscribeToWatchlist()
+                this.onSignedIn(user)
+            } else {
+                this.onSignedOut()
             }
         })
-
-        try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                await signInWithCustomToken(auth, __initial_auth_token)
-            } else {
-                await signInAnonymously(auth)
-            }
-        } catch (error) {
-            console.error("Auth Failed:", error)
-        }
     },
-
+    
     resetToHome: function() {
         this.switchView('search')
         this.clearSearch()
@@ -108,6 +116,174 @@ window.app = {
         document.getElementById('search-placeholder').classList.remove('hidden')
         document.getElementById('search-loading').classList.add('hidden')
         document.getElementById('mobile-menu').classList.add('hidden')
+    },
+
+    onSignedIn: async function(user) {
+    this.closeAuthModal()
+    this.updateAuthUI()
+    this.subscribeToWatchlist()
+    await this.checkForMigration()
+    },
+
+    onSignedOut: function() {
+        this.watchlist = []
+        this.updateAuthUI()
+        this.renderWatchlist()
+        if (this.unsubscribeSnapshot) {
+            this.unsubscribeSnapshot()
+            this.unsubscribeSnapshot = null
+        }
+    },
+    
+    updateAuthUI: function() {
+        const loggedIn = !!this.user
+        const headerLabel = document.getElementById('header-account-label')
+        const mobileLabel = document.getElementById('mobile-account-label')
+        const formSection = document.getElementById('auth-form-section')
+        const accountSection = document.getElementById('account-section')
+    
+        if (headerLabel) headerLabel.innerText = loggedIn ? (this.user.email || 'Account') : 'Sign In'
+        if (mobileLabel) mobileLabel.innerText = loggedIn ? 'Account' : 'Sign In'
+        if (formSection) formSection.classList.toggle('hidden', loggedIn)
+        if (accountSection) accountSection.classList.toggle('hidden', !loggedIn)
+        if (loggedIn) {
+            const emailDisplay = document.getElementById('account-email-display')
+            if (emailDisplay) emailDisplay.innerText = this.user.email || 'Signed in'
+        }
+    },
+    
+    signInWithGoogle: async function() {
+        const provider = new GoogleAuthProvider()
+        try {
+            await signInWithPopup(auth, provider)
+        } catch (error) {
+            console.error("Google Sign-In Error:", error)
+            this.showToast("Google sign-in failed. Try again.")
+        }
+    },
+    
+    handleEmailAuth: async function() {
+        const email = document.getElementById('input-auth-email').value.trim()
+        const password = document.getElementById('input-auth-password').value
+        const errorEl = document.getElementById('auth-error-message')
+        errorEl.classList.add('hidden')
+    
+        if (!email || !password) {
+            errorEl.innerText = "Please enter both email and password."
+            errorEl.classList.remove('hidden')
+            return
+        }
+    
+        try {
+            if (this.authMode === 'signup') {
+                await createUserWithEmailAndPassword(auth, email, password)
+            } else {
+                await signInWithEmailAndPassword(auth, email, password)
+            }
+        } catch (error) {
+            errorEl.innerText = this.friendlyAuthError(error.code)
+            errorEl.classList.remove('hidden')
+        }
+    },
+    
+    friendlyAuthError: function(code) {
+        const messages = {
+            'auth/email-already-in-use': 'That email is already registered. Try signing in instead.',
+            'auth/invalid-email': 'That email address looks invalid.',
+            'auth/weak-password': 'Password should be at least 6 characters.',
+            'auth/user-not-found': 'No account found with that email.',
+            'auth/wrong-password': 'Incorrect password.',
+            'auth/invalid-credential': 'Incorrect email or password.',
+        }
+        return messages[code] || 'Something went wrong. Please try again.'
+    },
+    
+    handleForgotPassword: async function() {
+        const email = document.getElementById('input-auth-email').value.trim()
+        if (!email) {
+            this.showToast("Enter your email above first, then click 'Forgot password?'")
+            return
+        }
+        try {
+            await sendPasswordResetEmail(auth, email)
+            this.showToast("Password reset email sent!")
+        } catch (error) {
+            this.showToast("Couldn't send reset email. Check the address.")
+        }
+    },
+    
+    signOutUser: async function() {
+        await signOut(auth)
+        this.showToast("Signed out")
+    },
+    
+    switchAuthMode: function() {
+        this.authMode = this.authMode === 'login' ? 'signup' : 'login'
+        const title = document.getElementById('auth-modal-title')
+        const submitBtn = document.getElementById('btn-auth-submit')
+        const switchLink = document.getElementById('link-auth-switch')
+        const switchText = document.getElementById('auth-switch-text')
+    
+        if (this.authMode === 'signup') {
+            title.innerText = 'Create Account'
+            submitBtn.innerText = 'Sign Up'
+            switchText.innerText = 'Already have an account?'
+            switchLink.innerText = 'Sign In'
+        } else {
+            title.innerText = 'Sign In'
+            submitBtn.innerText = 'Sign In'
+            switchText.innerText = "Don't have an account?"
+            switchLink.innerText = 'Sign Up'
+        }
+        document.getElementById('auth-error-message').classList.add('hidden')
+    },
+    
+    openAuthModal: function() {
+        document.getElementById('auth-modal').classList.remove('hidden')
+    },
+    
+    closeAuthModal: function() {
+        document.getElementById('auth-modal').classList.add('hidden')
+        document.getElementById('input-auth-email').value = ''
+        document.getElementById('input-auth-password').value = ''
+        document.getElementById('auth-error-message').classList.add('hidden')
+    },
+    
+    checkForMigration: async function() {
+        if (!this.userKey) return
+        if (this.watchlist.length > 0) return
+    
+        try {
+            const oldDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom_watchlists', this.userKey)
+            const oldSnap = await getDoc(oldDocRef)
+            if (oldSnap.exists()) {
+                const oldMovies = oldSnap.data().movies || []
+                if (oldMovies.length > 0) {
+                    this.pendingMigrationMovies = oldMovies
+                    document.getElementById('migration-count').innerText = oldMovies.length
+                    document.getElementById('migration-prompt').classList.remove('hidden')
+                }
+            }
+        } catch (e) {
+            console.error("Migration check failed", e)
+        }
+    },
+    
+    confirmMigration: function() {
+        if (this.pendingMigrationMovies) {
+            const newOnes = this.pendingMigrationMovies.filter(
+                m => !this.watchlist.some(existing => existing.imdbID === m.imdbID)
+            )
+            this.watchlist = [...this.watchlist, ...newOnes]
+            this.saveWatchlistToCloud()
+            this.renderWatchlist()
+            this.showToast("Watchlist imported!")
+        }
+        document.getElementById('migration-prompt').classList.add('hidden')
+    },
+    
+    dismissMigration: function() {
+        document.getElementById('migration-prompt').classList.add('hidden')
     },
 
     clearSearch: function() {
@@ -170,63 +346,10 @@ window.app = {
         }
     },
 
-    updateKeyDisplay: function() {
-        const elHeader = document.getElementById('header-key-display')
-        const elModal = document.getElementById('modal-key-display')
-        const elWatchlist = document.getElementById('watchlist-key-display')
-
-        if (elHeader) elHeader.innerText = this.userKey
-        if (elModal) elModal.innerText = this.userKey
-        if (elWatchlist) elWatchlist.innerText = this.userKey
-    },
-
-    openKeyModal: function() {
-        document.getElementById('key-modal').classList.remove('hidden')
-    },
-
-    closeKeyModal: function() {
-        document.getElementById('key-modal').classList.add('hidden')
-    },
-
-    openImportModal: function() {
-        document.getElementById('import-modal').classList.remove('hidden')
-        setTimeout(() => document.getElementById('input-import-key-pure').focus(), 100)
-    },
-
-    closeImportModal: function() {
-        document.getElementById('import-modal').classList.add('hidden')
-    },
-
-    copyKey: function() {
-        navigator.clipboard.writeText(this.userKey)
-        this.showToast("Key copied to clipboard!")
-    },
-
-    loadKey: function(inputId) {
-        const idToUse = (typeof inputId === 'string') ? inputId : 'input-sync-key'
-        const input = document.getElementById(idToUse)
-        const newKey = input.value.trim()
-        
-        if (newKey && newKey.length > 5) {
-            this.userKey = newKey
-            localStorage.setItem('fyf_user_key', newKey)
-            this.updateKeyDisplay()
-            this.subscribeToWatchlist() 
-            this.closeKeyModal()
-            this.closeImportModal()
-            this.showToast("Sync Key loaded successfully!")
-            input.value = ''
-        } else {
-            alert("Please enter a valid key.")
-        }
-    },
-
     subscribeToWatchlist: function() {
-        if (!this.user || !this.userKey) return
-        
+        if (!this.user) return
         if (this.unsubscribeSnapshot) this.unsubscribeSnapshot()
-
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom_watchlists', this.userKey)
+        const docRef = doc(db, 'watchlists', this.user.uid)
         
         this.unsubscribeSnapshot = onSnapshot(docRef, (docSnap) => {
             // THE FIX: Ignore Firebase updates while the user is actively interacting
@@ -247,8 +370,8 @@ window.app = {
     },
 
     saveWatchlistToCloud: async function() {
-        if (!this.user || !this.userKey) return
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom_watchlists', this.userKey)
+        if (!this.user) return
+        const docRef = doc(db, 'watchlists', this.user.uid)
         try {
             await setDoc(docRef, { movies: this.watchlist, lastUpdated: new Date().toISOString() })
         } catch (e) {
@@ -935,7 +1058,8 @@ window.app = {
 
     addToWatchlist: function(imdbID) {
         if (!this.user) {
-            this.showToast("Initializing cloud sync...")
+            this.showToast("Sign in to save movies to your watchlist")
+            this.openAuthModal()
             return
         }
         
