@@ -97,12 +97,19 @@ window.app = {
                 this.onSignedOut()
             }
         })
-            try {
+        try {
             await getRedirectResult(auth)
         } catch (error) {
             console.error("Redirect sign-in error:", error)
-            this.showToast("Google sign-in failed. Try again.")
+        } finally {
+            this.checkPendingGoogleSignIn()
         }
+
+        window.addEventListener('pageshow', (event) => {
+            if (event.persisted) {
+                this.checkPendingGoogleSignIn()
+            }
+        })
     },
 
     resetToHome: function() {
@@ -184,16 +191,47 @@ window.app = {
         if (icon) icon.classList.add('hidden')
         if (text) text.innerText = 'Redirecting to Google...'
 
+        sessionStorage.setItem('google_signin_pending', '1')
+
         try {
             await signInWithRedirect(auth, provider)
-            // page navigates away here — no need to reset anything
         } catch (error) {
             console.error("Google Sign-In Error:", error)
-            this.showToast("Google sign-in failed. Try again.")
+            sessionStorage.removeItem('google_signin_pending')
             this.setAuthLoading(false)
-            if (spinner) spinner.classList.add('hidden')
-            if (icon) icon.classList.remove('hidden')
-            if (text) text.innerText = 'Continue with Google'
+            this.resetGoogleButtonUI()
+            this.showAuthError(this.friendlyAuthError(error.code))
+        }
+    },
+
+    resetGoogleButtonUI: function() {
+        const spinner = document.getElementById('google-signin-spinner')
+        const icon = document.getElementById('google-signin-icon')
+        const text = document.getElementById('google-signin-text')
+        if (spinner) spinner.classList.add('hidden')
+        if (icon) icon.classList.remove('hidden')
+        if (text) text.innerText = 'Continue with Google'
+    },
+
+    showAuthError: function(message) {
+        const errorEl = document.getElementById('auth-error-message')
+        if (errorEl) {
+            errorEl.innerText = message
+            errorEl.classList.remove('hidden')
+        }
+        this.openAuthModal()
+    },
+
+    checkPendingGoogleSignIn: function() {
+        const wasPending = sessionStorage.getItem('google_signin_pending')
+        this.setAuthLoading(false)
+        this.resetGoogleButtonUI()
+
+        if (wasPending) {
+            sessionStorage.removeItem('google_signin_pending')
+            if (!auth.currentUser) {
+                this.showAuthError("Couldn't sign in with Google. Please try again.")
+            }
         }
     },
     
@@ -285,6 +323,8 @@ window.app = {
         document.getElementById('input-auth-email').value = ''
         document.getElementById('input-auth-password').value = ''
         document.getElementById('auth-error-message').classList.add('hidden')
+        this.setAuthLoading(false)
+        this.resetGoogleButtonUI()
     },
     
     checkForMigration: async function() {
