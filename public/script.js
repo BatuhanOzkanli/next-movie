@@ -3,7 +3,8 @@ import {
     getAuth, 
     onAuthStateChanged, 
     GoogleAuthProvider, 
-    signInWithPopup, 
+    signInWithRedirect,
+    getRedirectResult,
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
     signOut,
@@ -96,8 +97,14 @@ window.app = {
                 this.onSignedOut()
             }
         })
+            try {
+            await getRedirectResult(auth)
+        } catch (error) {
+            console.error("Redirect sign-in error:", error)
+            this.showToast("Google sign-in failed. Try again.")
+        }
     },
-    
+
     resetToHome: function() {
         this.switchView('search')
         this.clearSearch()
@@ -151,14 +158,42 @@ window.app = {
             if (emailDisplay) emailDisplay.innerText = this.user.email || 'Signed in'
         }
     },
+
+    setAuthLoading: function(isLoading) {
+        const submitBtn = document.getElementById('btn-auth-submit')
+        const spinner = document.getElementById('auth-submit-spinner')
+        const submitText = document.getElementById('auth-submit-text')
+        const googleBtn = document.getElementById('btn-google-signin')
+
+        if (submitBtn) submitBtn.disabled = isLoading
+        if (googleBtn) googleBtn.disabled = isLoading
+        if (spinner) spinner.classList.toggle('hidden', !isLoading)
+        if (submitText) submitText.innerText = isLoading
+            ? (this.authMode === 'signup' ? 'Creating account...' : 'Signing in...')
+            : (this.authMode === 'signup' ? 'Sign Up' : 'Sign In')
+    },
     
     signInWithGoogle: async function() {
         const provider = new GoogleAuthProvider()
+        const spinner = document.getElementById('google-signin-spinner')
+        const icon = document.getElementById('google-signin-icon')
+        const text = document.getElementById('google-signin-text')
+
+        this.setAuthLoading(true)
+        if (spinner) spinner.classList.remove('hidden')
+        if (icon) icon.classList.add('hidden')
+        if (text) text.innerText = 'Redirecting to Google...'
+
         try {
-            await signInWithPopup(auth, provider)
+            await signInWithRedirect(auth, provider)
+            // page navigates away here — no need to reset anything
         } catch (error) {
             console.error("Google Sign-In Error:", error)
             this.showToast("Google sign-in failed. Try again.")
+            this.setAuthLoading(false)
+            if (spinner) spinner.classList.add('hidden')
+            if (icon) icon.classList.remove('hidden')
+            if (text) text.innerText = 'Continue with Google'
         }
     },
     
@@ -167,13 +202,14 @@ window.app = {
         const password = document.getElementById('input-auth-password').value
         const errorEl = document.getElementById('auth-error-message')
         errorEl.classList.add('hidden')
-    
+
         if (!email || !password) {
             errorEl.innerText = "Please enter both email and password."
             errorEl.classList.remove('hidden')
             return
         }
-    
+
+        this.setAuthLoading(true)
         try {
             if (this.authMode === 'signup') {
                 await createUserWithEmailAndPassword(auth, email, password)
@@ -183,6 +219,8 @@ window.app = {
         } catch (error) {
             errorEl.innerText = this.friendlyAuthError(error.code)
             errorEl.classList.remove('hidden')
+        } finally {
+            this.setAuthLoading(false)
         }
     },
     
@@ -220,18 +258,18 @@ window.app = {
     switchAuthMode: function() {
         this.authMode = this.authMode === 'login' ? 'signup' : 'login'
         const title = document.getElementById('auth-modal-title')
-        const submitBtn = document.getElementById('btn-auth-submit')
+        const submitText = document.getElementById('auth-submit-text')
         const switchLink = document.getElementById('link-auth-switch')
         const switchText = document.getElementById('auth-switch-text')
     
         if (this.authMode === 'signup') {
             title.innerText = 'Create Account'
-            submitBtn.innerText = 'Sign Up'
+            submitText.innerText = 'Sign Up'
             switchText.innerText = 'Already have an account?'
             switchLink.innerText = 'Sign In'
         } else {
             title.innerText = 'Sign In'
-            submitBtn.innerText = 'Sign In'
+            submitText.innerText = 'Sign In'
             switchText.innerText = "Don't have an account?"
             switchLink.innerText = 'Sign Up'
         }

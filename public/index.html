@@ -181,29 +181,32 @@
                 <h3 id="auth-modal-title" class="text-xl font-bold text-white">Sign In</h3>
                 <button id="btn-close-auth-modal" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
             </div>
-        
+
             <div id="auth-form-section">
-                <button id="btn-google-signin" class="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2.5 rounded-lg transition-colors mb-4">
-                    <i class="fab fa-google text-red-500"></i> Continue with Google
+                    <button id="btn-google-signin" class="w-full flex items-center justify-center gap-2 bg-white hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed text-gray-800 font-semibold py-2.5 rounded-lg transition-colors mb-4">
+                    <i id="google-signin-spinner" class="fas fa-circle-notch fa-spin hidden"></i>
+                    <i id="google-signin-icon" class="fab fa-google text-red-500"></i>
+                    <span id="google-signin-text">Continue with Google</span>
                 </button>
-            
+
                 <div class="flex items-center gap-3 mb-4">
                     <div class="flex-grow h-px bg-gray-700"></div>
                     <span class="text-xs text-gray-500 uppercase">or</span>
                     <div class="flex-grow h-px bg-gray-700"></div>
                 </div>
-            
+
                 <div id="auth-error-message" class="hidden bg-red-900/30 border border-red-700/50 text-red-300 text-sm px-3 py-2 rounded mb-4"></div>
-            
+
                 <div class="space-y-3">
                     <input type="email" id="input-auth-email" placeholder="Email" class="w-full bg-[#2B2B2B] border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
                     <input type="password" id="input-auth-password" placeholder="Password" class="w-full bg-[#2B2B2B] border border-gray-700 rounded px-3 py-2 text-white focus:outline-none focus:border-yellow-500">
                 </div>
-            
-                <button id="btn-auth-submit" class="w-full bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2.5 rounded-lg transition-colors mt-4">
-                    Sign In
+
+                    <button id="btn-auth-submit" class="w-full bg-yellow-500 hover:bg-yellow-600 disabled:opacity-60 disabled:cursor-not-allowed text-black font-bold py-2.5 rounded-lg transition-colors mt-4 flex items-center justify-center gap-2">
+                    <i id="auth-submit-spinner" class="fas fa-circle-notch fa-spin hidden"></i>
+                    <span id="auth-submit-text">Sign In</span>
                 </button>
-            
+
                 <p class="text-center text-sm text-gray-400 mt-4">
                     <span id="auth-switch-text">Don't have an account?</span>
                     <a href="#" id="link-auth-switch" class="text-yellow-500 hover:text-yellow-400 font-semibold">Sign Up</a>
@@ -212,7 +215,7 @@
                     <a href="#" id="link-forgot-password" class="hover:text-gray-300">Forgot password?</a>
                 </p>
             </div>
-        
+
             <div id="account-section" class="hidden text-center">
                 <i class="fas fa-user-circle text-5xl text-yellow-500 mb-3"></i>
                 <p class="text-gray-300 mb-6">Signed in as <br><span id="account-email-display" class="text-white font-semibold"></span></p>
