@@ -297,14 +297,8 @@ window.app = {
 
     // NEW: reveal/hide the star row directly, no CSS :has() dependency
     const starWrapper = document.getElementById(`star-wrapper-${imdbID}`)
-    if (starWrapper) {
-        if (movie.isWatched) {
-            starWrapper.classList.remove('max-h-0', 'opacity-0', 'mt-0', 'pt-0', 'border-transparent')
-            starWrapper.classList.add('max-h-20', 'opacity-100', 'mt-2', 'pt-3', 'border-gray-700/50')
-        } else {
-            starWrapper.classList.remove('max-h-20', 'opacity-100', 'mt-2', 'pt-3', 'border-gray-700/50')
-            starWrapper.classList.add('max-h-0', 'opacity-0', 'mt-0', 'pt-0', 'border-transparent')
-        }
+        if (starWrapper) {
+        starWrapper.classList.toggle('hidden', !movie.isWatched)
     }
 
     setTimeout(() => { this.isToggling = false }, 1000);
@@ -867,11 +861,11 @@ window.app = {
                         </label>
                     </div>
 
-                    <div id="star-wrapper-${movie.imdbID}" class="overflow-hidden transition-all duration-500 ease-in-out border-t ${isWatched ? 'max-h-20 opacity-100 mt-2 pt-3 border-gray-700/50' : 'max-h-0 opacity-0 mt-0 pt-0 border-transparent'}">
-                    <div id="star-container-${movie.imdbID}" class="star-rating flex justify-between px-1 py-1" onmouseleave="app.resetStarUI('${movie.imdbID}')">
-                        ${starsHtml}
-                        </div>
+                <div id="star-wrapper-${movie.imdbID}" class="${isWatched ? '' : 'hidden'} mt-2 pt-3 border-t border-gray-700/50">
+                <div id="star-container-${movie.imdbID}" class="star-rating flex justify-between px-1 py-1" onmouseleave="app.resetStarUI('${movie.imdbID}')">
+                ${starsHtml}
                     </div>
+                </div>
                 </div>
             `
 
