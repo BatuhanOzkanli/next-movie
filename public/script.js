@@ -299,11 +299,11 @@ window.app = {
     const starWrapper = document.getElementById(`star-wrapper-${imdbID}`)
     if (starWrapper) {
         if (movie.isWatched) {
-            starWrapper.classList.remove('grid-rows-[0fr]', 'opacity-0', 'mt-0', 'pt-0', 'border-transparent')
-            starWrapper.classList.add('grid-rows-[1fr]', 'opacity-100', 'mt-2', 'pt-2', 'border-gray-700/50')
+            starWrapper.classList.remove('max-h-0', 'opacity-0', 'mt-0', 'pt-0', 'border-transparent')
+            starWrapper.classList.add('max-h-20', 'opacity-100', 'mt-2', 'pt-3', 'border-gray-700/50')
         } else {
-            starWrapper.classList.remove('grid-rows-[1fr]', 'opacity-100', 'mt-2', 'pt-2', 'border-gray-700/50')
-            starWrapper.classList.add('grid-rows-[0fr]', 'opacity-0', 'mt-0', 'pt-0', 'border-transparent')
+            starWrapper.classList.remove('max-h-20', 'opacity-100', 'mt-2', 'pt-3', 'border-gray-700/50')
+            starWrapper.classList.add('max-h-0', 'opacity-0', 'mt-0', 'pt-0', 'border-transparent')
         }
     }
 
@@ -852,7 +852,7 @@ window.app = {
                 const type = i <= rating ? 'fas' : 'far'
                 const colorClass = i <= rating ? 'text-yellow-500' : 'text-gray-600'
                 
-                starsHtml += `<i id="star-${movie.imdbID}-${i}" class="${type} fa-star text-lg cursor-pointer transition-colors duration-200 ${colorClass}" 
+                starsHtml += `<i id="star-${movie.imdbID}-${i}" class="${type} fa-star text-2xl cursor-pointer transition-colors duration-200 ${colorClass}" 
                     onclick="app.setRating('${movie.imdbID}', ${i})"
                     onmouseenter="app.updateStarUI('${movie.imdbID}', ${i})"></i>`
             }
@@ -867,11 +867,9 @@ window.app = {
                         </label>
                     </div>
 
-                    <div id="star-wrapper-${movie.imdbID}" class="grid transition-all duration-700 ease-in-out border-t ${isWatched ? 'grid-rows-[1fr] opacity-100 mt-2 pt-2 border-gray-700/50' : 'grid-rows-[0fr] opacity-0 mt-0 pt-0 border-transparent'}">
-                        <div class="overflow-hidden min-h-0">
-                            <div id="star-container-${movie.imdbID}" class="star-rating flex justify-between px-1 py-1" onmouseleave="app.resetStarUI('${movie.imdbID}')">
-                                ${starsHtml}
-                            </div>
+                    <div id="star-wrapper-${movie.imdbID}" class="overflow-hidden transition-all duration-500 ease-in-out border-t ${isWatched ? 'max-h-20 opacity-100 mt-2 pt-3 border-gray-700/50' : 'max-h-0 opacity-0 mt-0 pt-0 border-transparent'}">
+                    <div id="star-container-${movie.imdbID}" class="star-rating flex justify-between px-1 py-1" onmouseleave="app.resetStarUI('${movie.imdbID}')">
+                        ${starsHtml}
                         </div>
                     </div>
                 </div>
