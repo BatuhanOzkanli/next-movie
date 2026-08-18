@@ -297,8 +297,20 @@ window.app = {
 
     // NEW: reveal/hide the star row directly, no CSS :has() dependency
     const starWrapper = document.getElementById(`star-wrapper-${imdbID}`)
-        if (starWrapper) {
-        starWrapper.classList.toggle('hidden', !movie.isWatched)
+    if (starWrapper) {
+        if (movie.isWatched) {
+            starWrapper.style.maxHeight = '100px'
+            starWrapper.style.opacity = '1'
+            starWrapper.style.marginTop = '0.5rem'
+            starWrapper.style.paddingTop = '0.75rem'
+            starWrapper.style.borderTopColor = 'rgba(75, 85, 99, 0.5)'
+        } else {
+            starWrapper.style.maxHeight = '0px'
+            starWrapper.style.opacity = '0'
+            starWrapper.style.marginTop = '0'
+            starWrapper.style.paddingTop = '0'
+            starWrapper.style.borderTopColor = 'transparent'
+        }
     }
 
     setTimeout(() => { this.isToggling = false }, 1000);
@@ -845,12 +857,16 @@ window.app = {
             for (let i = 1; i <= 5; i++) {
                 const type = i <= rating ? 'fas' : 'far'
                 const colorClass = i <= rating ? 'text-yellow-500' : 'text-gray-600'
-                
+            
                 starsHtml += `<i id="star-${movie.imdbID}-${i}" class="${type} fa-star text-2xl cursor-pointer transition-colors duration-200 ${colorClass}" 
                     onclick="app.setRating('${movie.imdbID}', ${i})"
                     onmouseenter="app.updateStarUI('${movie.imdbID}', ${i})"></i>`
             }
-
+            
+            const revealStyle = isWatched
+                ? 'max-height: 100px; opacity: 1; margin-top: 0.5rem; padding-top: 0.75rem; border-top-color: rgba(75, 85, 99, 0.5);'
+                : 'max-height: 0px; opacity: 0; margin-top: 0; padding-top: 0; border-top-color: transparent;'
+            
             watchedSectionHtml = `
                 <div class="bg-gray-800/50 p-3 rounded-xl border border-gray-700/50 mb-3 transition-colors group">
                     <div class="flex items-center justify-between relative z-10">
@@ -860,12 +876,12 @@ window.app = {
                             <span class="ml-2 text-sm font-semibold transition-colors duration-300 text-gray-400 group-hover/toggle:text-gray-200 peer-checked:text-green-400">Watched</span>
                         </label>
                     </div>
-
-                <div id="star-wrapper-${movie.imdbID}" class="${isWatched ? '' : 'hidden'} mt-2 pt-3 border-t border-gray-700/50">
-                <div id="star-container-${movie.imdbID}" class="star-rating flex justify-between px-1 py-1" onmouseleave="app.resetStarUI('${movie.imdbID}')">
-                ${starsHtml}
+            
+                    <div id="star-wrapper-${movie.imdbID}" class="overflow-hidden border-t transition-all duration-500 ease-in-out" style="${revealStyle}">
+                        <div id="star-container-${movie.imdbID}" class="star-rating flex justify-between px-1 py-1" onmouseleave="app.resetStarUI('${movie.imdbID}')">
+                            ${starsHtml}
+                        </div>
                     </div>
-                </div>
                 </div>
             `
 
