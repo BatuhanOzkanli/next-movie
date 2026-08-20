@@ -589,6 +589,11 @@ window.app = {
         const spinBtn = document.getElementById('btn-spin-again')
         const spinIcon = document.getElementById('spin-again-icon')
         const spinText = document.getElementById('spin-again-text')
+        const closeBtn = document.getElementById('btn-close-random-modal')
+            
+        if (spinBtn && closeBtn && !spinBtn.style.width) {
+            spinBtn.style.width = closeBtn.offsetWidth + 'px'
+        }
 
         if (spinBtn) spinBtn.disabled = true
         if (spinIcon) spinIcon.classList.remove('hidden')
