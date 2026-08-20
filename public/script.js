@@ -585,9 +585,14 @@ window.app = {
 
         const modal = document.getElementById('random-modal')
         const container = document.getElementById('random-movie-container')
+        
         const spinBtn = document.getElementById('btn-spin-again')
+        const spinIcon = document.getElementById('spin-again-icon')
+        const spinText = document.getElementById('spin-again-text')
 
         if (spinBtn) spinBtn.disabled = true
+        if (spinIcon) spinIcon.classList.remove('hidden')
+        if (spinText) spinText.classList.add('hidden')
 
         modal.classList.remove('hidden')
 
@@ -698,6 +703,8 @@ window.app = {
 
                 document.getElementById('winner-info').classList.remove('opacity-0')
                 if (spinBtn) spinBtn.disabled = false
+                if (spinIcon) spinIcon.classList.add('hidden')
+                if (spinText) spinText.classList.remove('hidden')
             }, 4000)
 
         }, 150) 
