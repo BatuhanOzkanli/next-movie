@@ -329,9 +329,25 @@ window.app = {
     
     checkForMigration: async function() {
         if (!this.userKey) return
-        if (this.watchlist.length > 0) return
-    
+
         try {
+            const newDocRef = doc(db, 'watchlists', this.user.uid)
+            const newSnap = await getDoc(newDocRef)
+            const newData = newSnap.exists() ? newSnap.data() : {}
+
+            // Already handled before (imported or dismissed) — never ask again
+            if (newData.migrationHandled) {
+                localStorage.removeItem('fyf_user_key')
+                this.userKey = null
+                return
+            }
+
+            // Account already has movies for some other reason — just mark it handled
+            if ((newData.movies || []).length > 0) {
+                await this.markMigrationHandled()
+                return
+            }
+
             const oldDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'custom_watchlists', this.userKey)
             const oldSnap = await getDoc(oldDocRef)
             if (oldSnap.exists()) {
@@ -340,28 +356,46 @@ window.app = {
                     this.pendingMigrationMovies = oldMovies
                     document.getElementById('migration-count').innerText = oldMovies.length
                     document.getElementById('migration-prompt').classList.remove('hidden')
+                    return
                 }
             }
+
+            // Nothing to migrate — mark handled so we stop checking
+            await this.markMigrationHandled()
         } catch (e) {
             console.error("Migration check failed", e)
         }
     },
     
-    confirmMigration: function() {
+    confirmMigration: async function() {
         if (this.pendingMigrationMovies) {
             const newOnes = this.pendingMigrationMovies.filter(
                 m => !this.watchlist.some(existing => existing.imdbID === m.imdbID)
             )
             this.watchlist = [...this.watchlist, ...newOnes]
-            this.saveWatchlistToCloud()
+            await this.saveWatchlistToCloud()
             this.renderWatchlist()
             this.showToast("Watchlist imported!")
         }
+        await this.markMigrationHandled()
         document.getElementById('migration-prompt').classList.add('hidden')
     },
-    
-    dismissMigration: function() {
+
+    dismissMigration: async function() {
+        await this.markMigrationHandled()
         document.getElementById('migration-prompt').classList.add('hidden')
+    },
+
+    markMigrationHandled: async function() {
+        if (!this.user) return
+        const docRef = doc(db, 'watchlists', this.user.uid)
+        try {
+            await setDoc(docRef, { migrationHandled: true }, { merge: true })
+        } catch (e) {
+            console.error("Failed to mark migration handled", e)
+        }
+        localStorage.removeItem('fyf_user_key')
+        this.userKey = null
     },
 
     clearSearch: function() {
@@ -451,7 +485,7 @@ window.app = {
         if (!this.user) return
         const docRef = doc(db, 'watchlists', this.user.uid)
         try {
-            await setDoc(docRef, { movies: this.watchlist, lastUpdated: new Date().toISOString() })
+            await setDoc(docRef, { movies: this.watchlist, lastUpdated: new Date().toISOString() }, { merge: true })
         } catch (e) {
             console.error("Save Error:", e)
             this.showToast("Error saving to cloud")
