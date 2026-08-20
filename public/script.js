@@ -1034,7 +1034,8 @@ window.app = {
         const countBadge = document.getElementById('watchlist-count')
         countBadge.innerText = `${this.watchlist.length}`
         const movieWord = this.watchlist.length === 1 ? 'movie' : 'movies'
-        countBadge.title = `${this.watchlist.length} ${movieWord} in your watchlist`
+        const tooltipText = document.getElementById('watchlist-tooltip-text')
+        if (tooltipText) tooltipText.innerText = `${this.watchlist.length} ${movieWord} in watchlist`
 
         if (this.watchlist.length === 0) {
             grid.innerHTML = ''
