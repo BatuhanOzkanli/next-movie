@@ -591,7 +591,6 @@ window.app = {
 
     pickRandomMovie: function() {
         if (!this.user) {
-            this.showToast("Sign in to use this feature!")
             this.openAuthModal()
             return
         }
@@ -993,7 +992,6 @@ window.app = {
 
     getAiRecommendation: async function() {
         if (!this.user) {
-            this.showToast("Sign in to use this feature!")
             this.openAuthModal()
             return
         }
