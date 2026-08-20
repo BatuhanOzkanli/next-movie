@@ -590,6 +590,12 @@ window.app = {
     },
 
     pickRandomMovie: function() {
+        if (!this.user) {
+            this.showToast("Sign in to use this feature!")
+            this.openAuthModal()
+            return
+        }
+
         const unwatched = this.watchlist.filter(m => !m.isWatched)
         const pool = unwatched.length > 0 ? unwatched : this.watchlist
 
@@ -986,6 +992,12 @@ window.app = {
     },
 
     getAiRecommendation: async function() {
+        if (!this.user) {
+            this.showToast("Sign in to use this feature!")
+            this.openAuthModal()
+            return
+        }
+
         if (this.watchlist.length === 0) {
             this.showToast("Add movies to your watchlist first!")
             return
