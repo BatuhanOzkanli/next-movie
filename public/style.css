@@ -76,3 +76,43 @@ body {
             animation: highlightPulse 2s infinite;
             z-index: 50;
         }
+
+        /* Watchlist count tooltip */
+        .count-badge-wrapper {
+            position: relative;
+            display: inline-flex;
+        }
+        
+        .count-badge-wrapper .count-tooltip {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%) translateY(4px);
+            background: #1f2937;
+            border: 1px solid rgba(75, 85, 99, 0.8);
+            color: #e5e7eb;
+            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            z-index: 99;
+        }
+        
+        .count-badge-wrapper:hover .count-tooltip {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .count-badge-wrapper .count-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(75, 85, 99, 0.8);
+        }
