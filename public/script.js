@@ -157,6 +157,8 @@ window.app = {
         const accountSection = document.getElementById('account-section')
     
         if (headerLabel) headerLabel.innerText = loggedIn ? (this.user.email || 'Account') : 'Sign In'
+        const modalTitle = document.getElementById('auth-modal-title')
+        if (modalTitle) modalTitle.classList.toggle('hidden', loggedIn)
         if (mobileLabel) mobileLabel.innerText = loggedIn ? 'Account' : 'Sign In'
         if (formSection) formSection.classList.toggle('hidden', loggedIn)
         if (accountSection) accountSection.classList.toggle('hidden', !loggedIn)

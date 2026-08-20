@@ -227,13 +227,20 @@
                 </p>
             </div>
 
-            <div id="account-section" class="hidden text-center">
-                <i class="fas fa-user-circle text-5xl text-yellow-500 mb-3"></i>
-                <p class="text-gray-300 mb-6">Signed in as <br><span id="account-email-display" class="text-white font-semibold"></span></p>
-                <button id="btn-sign-out" class="w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2.5 rounded-lg transition-colors">
+            <div id="account-section" class="hidden">
+            <div class="flex flex-col items-center pt-2 pb-4">
+                <div class="w-20 h-20 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center mb-4 shadow-lg shadow-yellow-500/20">
+                    <i class="fas fa-user text-3xl text-black"></i>
+                </div>
+                <p class="text-xs text-gray-500 uppercase tracking-widest mb-1">Signed in as</p>
+                <p id="account-email-display" class="text-white font-semibold text-base mb-8 truncate max-w-full px-4 text-center"></p>
+                <button id="btn-sign-out" class="w-full bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-red-400 hover:text-red-300 font-bold py-3.5 rounded-lg transition-all flex items-center justify-center gap-2 text-base">
+                    <i class="fas fa-sign-out-alt"></i>
                     Sign Out
                 </button>
             </div>
+            
+        </div>
         </div>
     </div>
 
