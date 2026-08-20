@@ -3,8 +3,7 @@ import {
     getAuth, 
     onAuthStateChanged, 
     GoogleAuthProvider, 
-    signInWithRedirect,
-    getRedirectResult,
+    signInWithPopup,
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
     signOut,
@@ -97,19 +96,7 @@ window.app = {
                 this.onSignedOut()
             }
         })
-        try {
-            await getRedirectResult(auth)
-        } catch (error) {
-            console.error("Redirect sign-in error:", error)
-        } finally {
-            this.checkPendingGoogleSignIn()
-        }
-
-        window.addEventListener('pageshow', (event) => {
-            if (event.persisted) {
-                this.checkPendingGoogleSignIn()
-            }
-        })
+       
     },
 
     resetToHome: function() {
@@ -191,18 +178,20 @@ window.app = {
         this.setAuthLoading(true)
         if (spinner) spinner.classList.remove('hidden')
         if (icon) icon.classList.add('hidden')
-        if (text) text.innerText = 'Redirecting to Google...'
-
-        sessionStorage.setItem('google_signin_pending', '1')
+        if (text) text.innerText = 'Opening Google...'
 
         try {
-            await signInWithRedirect(auth, provider)
+            await signInWithPopup(auth, provider)
+            // onAuthStateChanged handles the rest (closeAuthModal, subscribeToWatchlist, etc.)
         } catch (error) {
-            console.error("Google Sign-In Error:", error)
-            sessionStorage.removeItem('google_signin_pending')
+            console.error("Google Sign-In Error:", error.code, error.message)
+            // Don't show a scary error if the person just closed the popup themselves
+            if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+                this.showAuthError(this.friendlyAuthError(error.code))
+            }
+        } finally {
             this.setAuthLoading(false)
             this.resetGoogleButtonUI()
-            this.showAuthError(this.friendlyAuthError(error.code))
         }
     },
 
@@ -222,19 +211,6 @@ window.app = {
             errorEl.classList.remove('hidden')
         }
         this.openAuthModal()
-    },
-
-    checkPendingGoogleSignIn: function() {
-        const wasPending = sessionStorage.getItem('google_signin_pending')
-        this.setAuthLoading(false)
-        this.resetGoogleButtonUI()
-
-        if (wasPending) {
-            sessionStorage.removeItem('google_signin_pending')
-            if (!auth.currentUser) {
-                this.showAuthError("Couldn't sign in with Google. Please try again.")
-            }
-        }
     },
     
     handleEmailAuth: async function() {
@@ -272,6 +248,8 @@ window.app = {
             'auth/user-not-found': 'No account found with that email.',
             'auth/wrong-password': 'Incorrect password.',
             'auth/invalid-credential': 'Incorrect email or password.',
+            'auth/popup-blocked': 'Your browser blocked the sign-in popup. Please allow popups for this site and try again.',
+            'auth/network-request-failed': 'Network error. Check your connection and try again.',
         }
         return messages[code] || 'Something went wrong. Please try again.'
     },
