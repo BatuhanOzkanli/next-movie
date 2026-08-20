@@ -1033,6 +1033,8 @@ window.app = {
         const emptyState = document.getElementById('watchlist-empty')
         const countBadge = document.getElementById('watchlist-count')
         countBadge.innerText = `${this.watchlist.length}`
+        const movieWord = this.watchlist.length === 1 ? 'movie' : 'movies'
+        countBadge.title = `${this.watchlist.length} ${movieWord} in your watchlist`
 
         if (this.watchlist.length === 0) {
             grid.innerHTML = ''
