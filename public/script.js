@@ -590,7 +590,11 @@ window.app = {
         const spinIcon = document.getElementById('spin-again-icon')
         const spinText = document.getElementById('spin-again-text')
 
-        if (spinBtn) spinBtn.disabled = true
+        if (spinBtn) {
+            spinBtn.disabled = true
+            spinBtn.classList.remove('border-pink-300')
+            spinBtn.classList.add('border-transparent')
+        }
         if (spinIcon) spinIcon.classList.remove('hidden')
         if (spinText) spinText.classList.add('hidden')
 
@@ -709,9 +713,13 @@ window.app = {
                 winnerCard.querySelector('.border-4').classList.add('shadow-[0_0_30px_rgba(234,179,8,0.4)]')
 
                 document.getElementById('winner-info').classList.remove('opacity-0')
-                if (spinBtn) spinBtn.disabled = false
-                if (spinIcon) spinIcon.classList.add('hidden')
-                if (spinText) spinText.classList.remove('hidden')
+            if (spinBtn) {
+                spinBtn.disabled = false
+                spinBtn.classList.remove('border-transparent')
+                spinBtn.classList.add('border-pink-300')
+            }
+            if (spinIcon) spinIcon.classList.add('hidden')
+            if (spinText) spinText.classList.remove('hidden')
             }, 4000)
 
         }, 150) 
