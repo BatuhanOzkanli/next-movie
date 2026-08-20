@@ -684,16 +684,23 @@ window.app = {
 
         void track.offsetWidth 
 
-        setTimeout(() => {
+            setTimeout(() => {
             startCard.classList.add('opacity-40')
             startCard.classList.remove('opacity-100')
             startCard.querySelector('.border-4').classList.replace('border-yellow-500', 'border-gray-800')
-
+                
             track.style.transition = 'transform 4s cubic-bezier(0.15, 0.85, 0.3, 1)'
-            
+                
             const winnerCenter = winnerCard.offsetLeft + (winnerCard.offsetWidth / 2)
             const finalDistance = containerCenter - winnerCenter
             track.style.transform = `translateX(${finalDistance}px)`
+                
+            // Spin the icon with the exact same timing/easing as the track
+            this.spinIconRotation = (this.spinIconRotation || 0) + 2160 // 6 full turns
+            if (spinIcon) {
+                spinIcon.style.transition = 'transform 4s cubic-bezier(0.15, 0.85, 0.3, 1)'
+                spinIcon.style.transform = `rotate(${this.spinIconRotation}deg)`
+            }
 
             setTimeout(() => {
                 winnerCard.classList.remove('opacity-40')
