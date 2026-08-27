@@ -4,6 +4,7 @@ import {
     onAuthStateChanged, 
     GoogleAuthProvider, 
     signInWithPopup,
+    signInAnonymously,
     createUserWithEmailAndPassword, 
     signInWithEmailAndPassword, 
     signOut,
@@ -34,6 +35,35 @@ window.app = {
     searchMode: 'title', 
     isAnimating: false, // NEW: UI Lock flag to protect animations
     authMode: 'login',
+    isSettingUpDemo: false,
+
+    DEMO_MOVIES: [
+    { title: 'The Shawshank Redemption', year: '1994' }, { title: 'The Godfather', year: '1972' },
+    { title: 'The Dark Knight', year: '2008' }, { title: 'Pulp Fiction', year: '1994' },
+    { title: 'Forrest Gump', year: '1994' }, { title: 'Inception', year: '2010' },
+    { title: 'The Matrix', year: '1999' }, { title: 'Goodfellas', year: '1990' },
+    { title: 'Se7en', year: '1995' }, { title: 'The Silence of the Lambs', year: '1991' },
+    { title: 'Fight Club', year: '1999' }, { title: 'Interstellar', year: '2014' },
+    { title: 'The Lord of the Rings: The Fellowship of the Ring', year: '2001' }, { title: 'Gladiator', year: '2000' },
+    { title: 'Saving Private Ryan', year: '1998' }, { title: 'The Green Mile', year: '1999' },
+    { title: 'Spirited Away', year: '2001' }, { title: 'Parasite', year: '2019' },
+    { title: 'Whiplash', year: '2014' }, { title: 'The Prestige', year: '2006' },
+    { title: 'The Departed', year: '2006' }, { title: 'Django Unchained', year: '2012' },
+    { title: 'The Lion King', year: '1994' }, { title: 'Back to the Future', year: '1985' },
+    { title: 'Terminator 2: Judgment Day', year: '1991' }, { title: 'Alien', year: '1979' },
+    { title: 'Jurassic Park', year: '1993' }, { title: 'The Avengers', year: '2012' },
+    { title: 'Toy Story', year: '1995' }, { title: 'Titanic', year: '1997' },
+    { title: 'Avatar', year: '2009' }, { title: 'La La Land', year: '2016' },
+    { title: 'Get Out', year: '2017' }, { title: 'Mad Max: Fury Road', year: '2015' },
+    { title: 'The Grand Budapest Hotel', year: '2014' }, { title: 'Coco', year: '2017' },
+    { title: 'Joker', year: '2019' }, { title: 'Knives Out', year: '2019' },
+    { title: 'The Social Network', year: '2010' }, { title: 'Dunkirk', year: '2017' },
+    { title: '1917', year: '2019' }, { title: 'Blade Runner 2049', year: '2017' },
+    { title: 'No Country for Old Men', year: '2007' }, { title: 'There Will Be Blood', year: '2007' },
+    { title: 'Once Upon a Time in Hollywood', year: '2019' }, { title: 'The Wolf of Wall Street', year: '2013' },
+    { title: 'Inglourious Basterds', year: '2009' }, { title: 'Shutter Island', year: '2010' },
+    { title: 'Deadpool', year: '2016' }, { title: 'Spider-Man: Into the Spider-Verse', year: '2018' },
+    ],
     
     init: async function() {
         document.getElementById('nav-logo')?.addEventListener('click', () => this.resetToHome())
@@ -84,6 +114,7 @@ window.app = {
         document.getElementById('btn-sign-out')?.addEventListener('click', () => this.signOutUser())
         document.getElementById('btn-migration-confirm')?.addEventListener('click', () => this.confirmMigration())
         document.getElementById('btn-migration-dismiss')?.addEventListener('click', () => this.dismissMigration())
+        document.getElementById('btn-demo-signin')?.addEventListener('click', () => this.signInDemo())
 
         this.userKey = localStorage.getItem('fyf_user_key') // kept only to migrate old watchlists
         this.updateNavState('search')
@@ -120,10 +151,23 @@ window.app = {
     },
 
     onSignedIn: async function(user) {
-    this.closeAuthModal()
     this.updateAuthUI()
     this.subscribeToWatchlist()
-    await this.checkForMigration()
+
+    if (user.isAnonymous) {
+            if (this.isSettingUpDemo) {
+                this.isSettingUpDemo = false
+                this.closeAuthModal()
+                this.showToast("Setting up your demo — adding 50 movies...")
+                await this.seedDemoAccount()
+                this.showToast("Demo ready! Explore your watchlist.")
+            } else {
+                this.closeAuthModal()
+            }
+        } else {
+            this.closeAuthModal()
+            await this.checkForMigration()
+        }
     },
 
     onSignedOut: function() {
@@ -143,7 +187,7 @@ window.app = {
         const formSection = document.getElementById('auth-form-section')
         const accountSection = document.getElementById('account-section')
     
-        if (headerLabel) headerLabel.innerText = loggedIn ? (this.user.email || 'Account') : 'Sign In'
+        if (headerLabel) headerLabel.innerText = loggedIn ? (this.user.isAnonymous ? 'Demo Mode' : (this.user.email || 'Account')) : 'Sign In'
         const modalTitle = document.getElementById('auth-modal-title')
         if (modalTitle) modalTitle.classList.toggle('hidden', loggedIn)
         if (mobileLabel) mobileLabel.innerText = loggedIn ? 'Account' : 'Sign In'
@@ -160,9 +204,11 @@ window.app = {
         const spinner = document.getElementById('auth-submit-spinner')
         const submitText = document.getElementById('auth-submit-text')
         const googleBtn = document.getElementById('btn-google-signin')
+        const demoBtn = document.getElementById('btn-demo-signin')
 
         if (submitBtn) submitBtn.disabled = isLoading
         if (googleBtn) googleBtn.disabled = isLoading
+        if (demoBtn) demoBtn.disabled = isLoading
         if (spinner) spinner.classList.toggle('hidden', !isLoading)
         if (submitText) submitText.innerText = isLoading
             ? (this.authMode === 'signup' ? 'Creating account...' : 'Signing in...')
@@ -305,6 +351,81 @@ window.app = {
         document.getElementById('auth-error-message').classList.add('hidden')
         this.setAuthLoading(false)
         this.resetGoogleButtonUI()
+        this.resetDemoButtonUI()
+    },
+
+    signInDemo: async function() {
+    const btn = document.getElementById('btn-demo-signin')
+    const spinner = document.getElementById('demo-signin-spinner')
+    const icon = document.getElementById('demo-signin-icon')
+    const text = document.getElementById('demo-signin-text')
+
+    this.setAuthLoading(true)
+    if (btn) btn.disabled = true
+    if (spinner) spinner.classList.remove('hidden')
+    if (icon) icon.classList.add('hidden')
+    if (text) text.innerText = 'Starting demo...'
+
+    try {
+        if (this.user) {
+            await signOut(auth)
+        }
+        this.isSettingUpDemo = true
+        await signInAnonymously(auth)
+    } catch (error) {
+        console.error("Demo Sign-In Error:", error.code, error.message)
+        this.isSettingUpDemo = false
+        this.showAuthError(this.friendlyAuthError(error.code) || "Couldn't start the demo. Please try again.")
+        this.setAuthLoading(false)
+        this.resetDemoButtonUI()
+    }
+},
+
+resetDemoButtonUI: function() {
+    const spinner = document.getElementById('demo-signin-spinner')
+    const icon = document.getElementById('demo-signin-icon')
+    const text = document.getElementById('demo-signin-text')
+    if (spinner) spinner.classList.add('hidden')
+    if (icon) icon.classList.remove('hidden')
+    if (text) text.innerText = 'Try a Demo Account'
+},
+
+    seedDemoAccount: async function() {
+        if (!this.user) return
+        try {
+            const moviePromises = this.DEMO_MOVIES.map(m =>
+                fetch(`/api/omdb?t=${encodeURIComponent(m.title)}&y=${m.year}`)
+                    .then(res => res.json())
+                    .catch(() => null)
+            )
+            const results = await Promise.all(moviePromises)
+            const validMovies = results.filter(m => m && m.Response === "True")
+
+            this.watchlist = validMovies.map((m, idx) => {
+                const isWatched = idx % 5 === 0
+                return {
+                    ...m,
+                    isWatched,
+                    rating: isWatched ? (3 + Math.floor(Math.random() * 3)) : 0
+                }
+            })
+
+            const docRef = doc(db, 'watchlists', this.user.uid)
+            await setDoc(docRef, {
+                movies: this.watchlist,
+                isDemoAccount: true,
+                demoCreatedAt: new Date().toISOString(),
+                lastUpdated: new Date().toISOString()
+            }, { merge: true })
+
+            this.renderWatchlist()
+        } catch (e) {
+            console.error("Demo seed failed", e)
+            this.showToast("Couldn't fully set up the demo. Try refreshing.")
+        } finally {
+            this.setAuthLoading(false)
+            this.resetDemoButtonUI()
+        }
     },
     
     checkForMigration: async function() {

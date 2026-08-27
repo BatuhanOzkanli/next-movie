@@ -1,6 +1,6 @@
 # NextMovie 🍿✨
 
-**[Live Demo](https://nextmovie-v4.vercel.app/)**
+**[Live Demo](https://next-movie-list.vercel.app/)**
 
 NextMovie is an AI-powered movie discovery and watchlist application. It goes beyond standard title searches by allowing users to search for movies based on "moods" or "vibes," get instant AI summaries without spoilers, and randomly select their next watch using a custom roulette wheel. All data is seamlessly synced across devices using an anonymous key system backed by Firebase.
 
@@ -53,7 +53,7 @@ Because this project uses Vercel Serverless Functions (`/api`), you will need to
 Clone the repository and install the development dependencies (Tailwind):
 
 ```bash
-git clone [https://github.com/YOUR-USERNAME/nextmovie.git](https://github.com/YOUR-USERNAME/nextmovie.git)
+git clone (https://github.com/BatuhanOzkanli/next-movie.git)
 cd nextmovie
 npm install
 ```
