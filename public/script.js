@@ -64,6 +64,14 @@ window.app = {
     { title: 'Inglourious Basterds', year: '2009' }, { title: 'Shutter Island', year: '2010' },
     { title: 'Deadpool', year: '2016' }, { title: 'Spider-Man: Into the Spider-Verse', year: '2018' },
     ],
+
+    DEMO_MOVIES_BACKUP: [
+    { title: 'Casablanca', year: '1942' }, { title: "Schindler's List", year: '1993' },
+    { title: 'Braveheart', year: '1995' }, { title: 'Good Will Hunting', year: '1997' },
+    { title: 'American Beauty', year: '1999' }, { title: 'Memento', year: '2000' },
+    { title: 'Her', year: '2013' }, { title: 'Eternal Sunshine of the Spotless Mind', year: '2004' },
+    { title: 'Children of Men', year: '2006' }, { title: 'Up', year: '2009' },
+    ],
     
     init: async function() {
         document.getElementById('nav-logo')?.addEventListener('click', () => this.resetToHome())
@@ -393,13 +401,27 @@ resetDemoButtonUI: function() {
     seedDemoAccount: async function() {
         if (!this.user) return
         try {
-            const moviePromises = this.DEMO_MOVIES.map(m =>
+            const fetchMovie = (m) =>
                 fetch(`/api/omdb?t=${encodeURIComponent(m.title)}&y=${m.year}`)
                     .then(res => res.json())
                     .catch(() => null)
-            )
-            const results = await Promise.all(moviePromises)
-            const validMovies = results.filter(m => m && m.Response === "True")
+
+            const results = await Promise.all(this.DEMO_MOVIES.map(fetchMovie))
+            let validMovies = results.filter(m => m && m.Response === "True")
+
+            const failedTitles = this.DEMO_MOVIES.filter((m, idx) => !(results[idx] && results[idx].Response === "True"))
+            if (failedTitles.length > 0) {
+                console.warn("Demo seed: these titles didn't load from OMDb:", failedTitles.map(m => `${m.title} (${m.year})`))
+            }
+
+            // Top up from backups so the watchlist always lands on exactly 50
+            if (validMovies.length < 50) {
+                const needed = 50 - validMovies.length
+                const backupResults = await Promise.all(this.DEMO_MOVIES_BACKUP.map(fetchMovie))
+                const existingIds = new Set(validMovies.map(m => m.imdbID))
+                const validBackups = backupResults.filter(m => m && m.Response === "True" && !existingIds.has(m.imdbID))
+                validMovies = [...validMovies, ...validBackups.slice(0, needed)]
+            }
 
             this.watchlist = validMovies.map((m, idx) => {
                 const isWatched = idx % 5 === 0
