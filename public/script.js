@@ -713,18 +713,22 @@ resetDemoButtonUI: function() {
     },
 
     pickRandomMovie: function() {
-        if (!this.user) {
-            this.openAuthModal()
-            return
-        }
+    if (!this.user) {
+        this.openAuthModal()
+        return
+    }
 
-        const unwatched = this.watchlist.filter(m => !m.isWatched)
+    if (this.isSpinning) return
+
+    const unwatched = this.watchlist.filter(m => !m.isWatched)
         const pool = unwatched.length > 0 ? unwatched : this.watchlist
 
         if (pool.length === 0) {
-            this.showToast("Add some movies first!")
-            return
-        }
+        this.showToast("Add some movies first!")
+        return
+    }
+
+        this.isSpinning = true
 
         const modal = document.getElementById('random-modal')
         const container = document.getElementById('random-movie-container')
@@ -855,14 +859,15 @@ resetDemoButtonUI: function() {
                 winnerCard.querySelector('.border-4').classList.replace('border-gray-800', 'border-yellow-500')
                 winnerCard.querySelector('.border-4').classList.add('shadow-[0_0_30px_rgba(234,179,8,0.4)]')
 
-                document.getElementById('winner-info').classList.remove('opacity-0')
-            if (spinBtn) {
-                spinBtn.disabled = false
-                spinBtn.classList.remove('border-transparent')
-                spinBtn.classList.add('border-pink-300')
-            }
-            if (spinIcon) spinIcon.classList.add('hidden')
-            if (spinText) spinText.classList.remove('hidden')
+            document.getElementById('winner-info').classList.remove('opacity-0')
+                if (spinBtn) {
+                    spinBtn.disabled = false
+                    spinBtn.classList.remove('border-transparent')
+                    spinBtn.classList.add('border-pink-300')
+                }
+                if (spinIcon) spinIcon.classList.add('hidden')
+                if (spinText) spinText.classList.remove('hidden')
+                this.isSpinning = false
             }, 4000)
 
         }, 150) 
